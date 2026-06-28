@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="de-CH">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#060810">
+<title>Blitz-Entfernung Rechner</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-0:#060810;
+    --bg-1:#0d1228;
+    --surface:#121a32;
+    --surface-2:#1a2444;
+    --border:#283256;
+    --flash:#ffe066;
+    --flash-soft:rgba(255,224,102,.18);
+    --thunder:#7c93ff;
+    --danger:#ff5c5c;
+    --caution:#ffa94d;
+    --text:#f3f5ff;
+    --text-muted:#a3aed0;
+    --radius:18px;
+    --radius-sm:12px;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+
+  body{
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    color:var(--text);
+    background:
+      radial-gradient(circle at 18% 12%, rgba(255,224,102,.06), transparent 35%),
+      radial-gradient(circle at 82% 0%, rgba(124,147,255,.10), transparent 45%),
+      var(--bg-0);
+    min-height:100vh;
+    min-height:100dvh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:1.5rem 1.1rem calc(1.5rem + env(safe-area-inset-bottom));
+  }
+
+  .app{
+    width:100%;
+    max-width:440px;
+    display:flex;
+    flex-direction:column;
+    gap:1.5rem;
+  }
+
+  .eyebrow{
+    display:inline-flex;
+    align-items:center;
+    gap:.4em;
+    font-size:.75rem;
+    font-weight:600;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--flash);
+  }
+
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:clamp(1.9rem,7vw,2.5rem);
+    line-height:1.05;
+    letter-spacing:-.01em;
+    margin:.5rem 0 .55rem;
+  }
+
+  .subtitle{
+    color:var(--text-muted);
+    font-size:.95rem;
+    line-height:1.55;
+    max-width:34ch;
+  }
+
+  .card{
+    position:relative;
+    background:linear-gradient(160deg, rgba(18,26,50,.78), rgba(13,18,40,.62));
+    backdrop-filter:blur(22px);
+    -webkit-backdrop-filter:blur(22px);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:var(--radius);
+    padding:clamp(1.3rem,4.5vw,1.9rem);
+    box-shadow:0 24px 60px -24px rgba(0,0,0,.65);
+    overflow:hidden;
+  }
+
+  .card::before{
+    content:'';
+    position:absolute;
+    top:0; left:0; right:0;
+    height:2px;
+    background:linear-gradient(90deg,var(--flash),var(--thunder));
+    opacity:.8;
+  }
+
+  label{
+    display:block;
+    font-size:.85rem;
+    font-weight:500;
+    color:var(--text-muted);
+    margin-bottom:.65rem;
+  }
+
+  .stepper{ display:flex; gap:.55rem; }
+
+  .step-btn{
+    flex:0 0 48px;
+    border:1px solid var(--border);
+    border-radius:var(--radius-sm);
+    background:var(--surface-2);
+    color:var(--text);
+    font-size:1.4rem;
+    line-height:1;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  .step-btn:active{ background:var(--flash-soft); border-color:var(--flash); }
+
+  input#seconds{
+    flex:1;
+    min-width:0;
+    width:100%;
+    text-align:center;
+    font-family:'JetBrains Mono',monospace;
+    font-size:1.55rem;
+    font-weight:600;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:var(--radius-sm);
+    color:var(--text);
+    padding:.5rem .4rem;
+  }
+
+  input#seconds::-webkit-outer-spin-button,
+  input#seconds::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+  input#seconds{ -moz-appearance:textfield; appearance:textfield; }
+
+  input:focus-visible, .step-btn:focus-visible, button:focus-visible{
+    outline:2px solid var(--flash);
+    outline-offset:2px;
+  }
+
+  .hint{ font-size:.8rem; color:var(--text-muted); margin:.7rem 0 1.15rem; }
+
+  .btn-primary{
+    position:relative;
+    width:100%;
+    min-height:52px;
+    border:none;
+    border-radius:var(--radius-sm);
+    background:linear-gradient(135deg,var(--flash),#ffd23f);
+    color:#1a1304;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:1.05rem;
+    cursor:pointer;
+    overflow:hidden;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:.5rem;
+    box-shadow:0 10px 26px -10px var(--flash-soft);
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  .btn-primary:active{ transform:translateY(1px); }
+
+  .btn-ring{
+    position:absolute;
+    top:50%; left:50%;
+    width:10px; height:10px;
+    border-radius:50%;
+    background:radial-gradient(circle, rgba(255,255,255,.95), rgba(255,255,255,0) 70%);
+    transform:translate(-50%,-50%);
+    opacity:0;
+    pointer-events:none;
+  }
+
+  .btn-ring.ringing{ animation:pulseRing .6s ease-out; }
+
+  @keyframes pulseRing{
+    0%{ width:10px; height:10px; opacity:.9; }
+    100%{ width:340px; height:340px; opacity:0; }
+  }
+
+  .mode-toggle{
+    display:flex;
+    gap:.4rem;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:999px;
+    padding:.3rem;
+    margin-bottom:1.4rem;
+  }
+
+  .mode-btn{
+    flex:1;
+    border:none;
+    background:transparent;
+    color:var(--text-muted);
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:.85rem;
+    padding:.55rem 0;
+    border-radius:999px;
+    cursor:pointer;
+    transition:background .25s ease, color .25s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  .mode-btn.active{
+    background:linear-gradient(135deg,var(--flash),#ffd23f);
+    color:#1a1304;
+  }
+
+  .timer-panel{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:1rem;
+    padding:.4rem 0 .2rem;
+    text-align:center;
+  }
+
+  .timer-display{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:clamp(1.9rem,9vw,2.4rem);
+    color:var(--text-muted);
+    min-height:1.2em;
+  }
+
+  .timer-trigger{
+    width:128px; height:128px;
+    border-radius:50%;
+    border:none;
+    cursor:pointer;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:.3rem;
+    background:radial-gradient(circle at 32% 28%, #fff6d6, var(--flash) 55%, #ffd23f 100%);
+    color:#1a1304;
+    box-shadow:0 12px 30px -10px var(--flash-soft);
+    transition:background .35s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  .timer-trigger .timer-icon{ font-size:1.7rem; line-height:1; }
+  .timer-trigger .timer-label{ font-size:.85rem; letter-spacing:.04em; text-transform:uppercase; }
+
+  .timer-trigger.running{
+    background:radial-gradient(circle at 32% 28%, #e4e9ff, var(--thunder) 55%, #5d7af0 100%);
+    color:#0c1330;
+    animation:pulseGlow 1.4s ease-in-out infinite;
+  }
+
+  @keyframes pulseGlow{
+    0%,100%{ box-shadow:0 0 0 0 rgba(124,147,255,.45); }
+    50%{ box-shadow:0 0 0 16px rgba(124,147,255,0); }
+  }
+
+  .timer-cancel{
+    border:none;
+    background:transparent;
+    color:var(--text-muted);
+    font-size:.82rem;
+    text-decoration:underline;
+    cursor:pointer;
+    padding:.3rem;
+  }
+
+  .error{
+    margin-top:1rem;
+    padding:.75rem 1rem;
+    border-radius:var(--radius-sm);
+    background:rgba(255,92,92,.12);
+    border:1px solid rgba(255,92,92,.4);
+    color:#ffb3b3;
+    font-size:.88rem;
+  }
+
+  .result{
+    margin-top:1.5rem;
+    padding-top:1.4rem;
+    border-top:1px dashed var(--border);
+    text-align:center;
+    animation:fadeUp .4s ease;
+  }
+
+  @keyframes fadeUp{
+    from{ opacity:0; transform:translateY(6px); }
+    to{ opacity:1; transform:none; }
+  }
+
+  .readout{ display:flex; align-items:baseline; justify-content:center; gap:.4rem; }
+
+  .km{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:clamp(2.3rem,12vw,3.1rem);
+    color:var(--flash);
+    letter-spacing:-.02em;
+  }
+
+  .unit{ font-size:1.05rem; font-weight:600; color:var(--text-muted); }
+
+  .meters{
+    font-family:'JetBrains Mono',monospace;
+    font-size:.92rem;
+    color:var(--text-muted);
+    margin-top:.25rem;
+  }
+
+  .gauge{ margin:1.5rem 0 .6rem; }
+
+  .gauge-track{
+    position:relative;
+    height:8px;
+    border-radius:999px;
+    background:linear-gradient(90deg,var(--danger),var(--caution),var(--flash),var(--thunder));
+  }
+
+  .gauge-marker{
+    position:absolute;
+    top:50%; left:0%;
+    width:14px; height:14px;
+    border-radius:50%;
+    background:#fff;
+    border:3px solid var(--bg-0);
+    box-shadow:0 0 0 4px rgba(255,255,255,.15);
+    transform:translate(-50%,-50%);
+    transition:left .5s ease;
+  }
+
+  .gauge-labels{
+    display:flex;
+    justify-content:space-between;
+    font-size:.7rem;
+    font-weight:500;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+    margin-top:.5rem;
+  }
+
+  .status{
+    margin-top:1.1rem;
+    font-size:.92rem;
+    font-weight:600;
+    padding:.65rem .9rem;
+    border-radius:var(--radius-sm);
+  }
+
+  .status.danger{ background:rgba(255,92,92,.12); color:#ffb3b3; }
+  .status.caution{ background:rgba(255,169,77,.12); color:#ffcf9e; }
+  .status.calm{ background:rgba(124,147,255,.12); color:#c4cfff; }
+
+  .footer{
+    font-size:.82rem;
+    line-height:1.55;
+    color:var(--text-muted);
+    text-align:center;
+    padding:0 .4rem;
+  }
+
+  .footer strong{ color:var(--text); }
+
+  @media (hover:hover){
+    .step-btn:hover{ border-color:var(--flash); }
+    .btn-primary:hover{ filter:brightness(1.04); }
+  }
+
+  @media (min-width:600px){
+    body{ padding:2.5rem 1.5rem; }
+    .app{ gap:1.75rem; }
+    .card{ padding:2.1rem; }
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    .result{ animation:none; }
+    .btn-ring.ringing{ animation:none; }
+    .gauge-marker{ transition:none; }
+    .timer-trigger.running{ animation:none; }
+  }
+</style>
+</head>
+<body>
+
+<main class="app">
+
+  <header>
+    <span class="eyebrow">⚡ Wetter-Tool</span>
+    <h1>Blitz-Entfernung</h1>
+    <p class="subtitle">Zähle die Sekunden zwischen Blitz und Donner – wir berechnen, wie weit das Gewitter entfernt ist.</p>
+  </header>
+
+  <section class="card" aria-label="Rechner">
+    <div class="mode-toggle" role="tablist" aria-label="Eingabemethode">
+      <button type="button" class="mode-btn active" data-mode="manual" role="tab" aria-selected="true">Manuell</button>
+      <button type="button" class="mode-btn" data-mode="timer" role="tab" aria-selected="false">Stoppuhr</button>
+    </div>
+
+    <div class="panel" data-panel="manual">
+      <form id="calcForm" novalidate>
+        <label for="seconds">Sekunden bis zum Donner</label>
+        <div class="stepper">
+          <button type="button" class="step-btn" data-step="-1" aria-label="Wert verringern">–</button>
+          <input type="number" id="seconds" inputmode="decimal" min="0" step="1" placeholder="z. B. 7">
+          <button type="button" class="step-btn" data-step="1" aria-label="Wert erhöhen">+</button>
+        </div>
+        <p class="hint">Faustregel: Sekunden ÷ 3 ≈ Kilometer</p>
+        <button type="submit" class="btn-primary">
+          <span class="btn-ring" aria-hidden="true"></span>
+          <span>⚡ Berechnen</span>
+        </button>
+      </form>
+    </div>
+
+    <div class="panel" data-panel="timer" hidden>
+      <div class="timer-panel">
+        <div id="timerDisplay" class="timer-display">0,0 s</div>
+        <button type="button" id="timerTrigger" class="timer-trigger" aria-pressed="false">
+          <span class="timer-icon">⚡</span>
+          <span class="timer-label">Start</span>
+        </button>
+        <p id="timerHint" class="hint" style="margin:0;">Drücke, sobald du den Blitz siehst.</p>
+        <button type="button" id="timerCancel" class="timer-cancel" hidden>Abbrechen</button>
+      </div>
+    </div>
+
+    <div id="error" class="error" role="alert" hidden></div>
+
+    <div id="result" class="result" aria-live="polite" hidden>
+      <div class="readout">
+        <span id="km" class="km">0,00</span><span class="unit">km</span>
+      </div>
+      <div id="meters" class="meters">0 m</div>
+
+      <div class="gauge">
+        <div class="gauge-track">
+          <div id="marker" class="gauge-marker"></div>
+        </div>
+        <div class="gauge-labels">
+          <span>Nah</span>
+          <span>Mittel</span>
+          <span>Fern</span>
+        </div>
+      </div>
+
+      <p id="status" class="status"></p>
+    </div>
+  </section>
+
+  <footer class="footer">
+    ⛈️ <strong>30/30-Regel:</strong> Vergehen weniger als 30 Sekunden zwischen Blitz und Donner, gilt das Gewitter als gefährlich nah – drinnen bleiben oder Schutz aufsuchen.
+  </footer>
+
+</main>
+
+<script>
+(function(){
+  var SOUND_SPEED = 340;   // m/s
+  var GAUGE_MAX_KM = 20;   // Skala des Annäherungsbalkens
+  var DANGER_SEC = 30;     // 30/30-Regel
+  var CAUTION_SEC = 60;
+
+  var form = document.getElementById('calcForm');
+  var secInput = document.getElementById('seconds');
+  var errorBox = document.getElementById('error');
+  var resultBox = document.getElementById('result');
+  var kmEl = document.getElementById('km');
+  var metersEl = document.getElementById('meters');
+  var statusEl = document.getElementById('status');
+  var markerEl = document.getElementById('marker');
+  var ring = document.querySelector('.btn-ring');
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var kmFormatter = new Intl.NumberFormat('de-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  var mFormatter = new Intl.NumberFormat('de-CH', { maximumFractionDigits: 0 });
+  var tickFormatter = new Intl.NumberFormat('de-CH', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+  var modeButtons = document.querySelectorAll('.mode-btn');
+  var panels = document.querySelectorAll('.panel');
+  var timerTrigger = document.getElementById('timerTrigger');
+  var timerDisplay = document.getElementById('timerDisplay');
+  var timerHint = document.getElementById('timerHint');
+  var timerCancel = document.getElementById('timerCancel');
+  var timerIconEl = timerTrigger.querySelector('.timer-icon');
+  var timerLabelEl = timerTrigger.querySelector('.timer-label');
+
+  var timerRunning = false;
+  var timerStart = null;
+  var timerIntervalId = null;
+
+  document.querySelectorAll('.step-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var step = parseFloat(btn.dataset.step);
+      var current = parseFloat(secInput.value) || 0;
+      secInput.value = Math.max(0, current + step);
+      hideError();
+    });
+  });
+
+  secInput.addEventListener('input', hideError);
+
+  modeButtons.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var mode = btn.dataset.mode;
+
+      modeButtons.forEach(function(b){
+        var active = (b === btn);
+        b.classList.toggle('active', active);
+        b.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+
+      panels.forEach(function(p){
+        p.hidden = (p.dataset.panel !== mode);
+      });
+
+      if (mode !== 'timer' && timerRunning){
+        cancelTimer();
+      }
+
+      hideError();
+    });
+  });
+
+  timerTrigger.addEventListener('click', function(){
+    if (timerRunning) stopTimer(); else startTimer();
+  });
+
+  timerCancel.addEventListener('click', cancelTimer);
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    calculate();
+  });
+
+  function calculate(){
+    var raw = secInput.value.trim();
+    var sec = parseFloat(raw);
+
+    if (raw === '' || isNaN(sec) || sec < 0){
+      showError('Bitte eine gültige Zahl ab 0 eingeben, z. B. 7.');
+      resultBox.hidden = true;
+      return;
+    }
+
+    hideError();
+    playRing();
+    renderResult(sec);
+  }
+
+  function renderResult(sec){
+    hideError();
+
+    var meters = sec * SOUND_SPEED;
+    var km = meters / 1000;
+
+    kmEl.textContent = kmFormatter.format(km);
+    metersEl.textContent = mFormatter.format(meters) + ' m';
+
+    var markerPct = Math.min(km / GAUGE_MAX_KM, 1) * 100;
+    markerEl.style.left = markerPct + '%';
+
+    var statusClass, statusText;
+    if (sec < DANGER_SEC){
+      statusClass = 'danger';
+      statusText = '⚠️ Gewitter ist sehr nah – sofort Schutz suchen!';
+    } else if (sec < CAUTION_SEC){
+      statusClass = 'caution';
+      statusText = 'Noch in Hörweite – Lage im Blick behalten.';
+    } else {
+      statusClass = 'calm';
+      statusText = 'Gewitter ist weiter entfernt.';
+    }
+
+    statusEl.className = 'status ' + statusClass;
+    statusEl.textContent = statusText;
+    resultBox.hidden = false;
+  }
+
+  function startTimer(){
+    timerRunning = true;
+    timerStart = performance.now();
+
+    timerTrigger.classList.add('running');
+    timerTrigger.setAttribute('aria-pressed', 'true');
+    timerIconEl.textContent = '⛈️';
+    timerLabelEl.textContent = 'Stopp';
+    timerHint.textContent = 'Drücke, sobald du den Donner hörst.';
+    timerCancel.hidden = false;
+
+    timerIntervalId = setInterval(function(){
+      var elapsed = (performance.now() - timerStart) / 1000;
+      timerDisplay.textContent = tickFormatter.format(elapsed) + ' s';
+    }, 100);
+  }
+
+  function stopTimer(){
+    var elapsed = (performance.now() - timerStart) / 1000;
+    clearInterval(timerIntervalId);
+    resetTimerUI();
+    secInput.value = elapsed.toFixed(1);
+    renderResult(elapsed);
+  }
+
+  function cancelTimer(){
+    clearInterval(timerIntervalId);
+    resetTimerUI();
+  }
+
+  function resetTimerUI(){
+    timerRunning = false;
+    timerTrigger.classList.remove('running');
+    timerTrigger.setAttribute('aria-pressed', 'false');
+    timerIconEl.textContent = '⚡';
+    timerLabelEl.textContent = 'Start';
+    timerHint.textContent = 'Drücke, sobald du den Blitz siehst.';
+    timerCancel.hidden = true;
+    timerDisplay.textContent = '0,0 s';
+  }
+
+  function showError(msg){
+    errorBox.textContent = '⚠️ ' + msg;
+    errorBox.hidden = false;
+  }
+
+  function hideError(){
+    errorBox.hidden = true;
+  }
+
+  function playRing(){
+    if (reduceMotion) return;
+    ring.classList.remove('ringing');
+    void ring.offsetWidth;
+    ring.classList.add('ringing');
+  }
+})();
+</script>
+
+</body>
+</html>
