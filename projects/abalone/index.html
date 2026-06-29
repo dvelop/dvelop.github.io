@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Abalone – Kugelschiebe-Strategiespiel</title>
+<style>
+  /* ===========================================================
+     DESIGN TOKENS
+     =========================================================== */
+  :root{
+    --bg-1:#1d2030;
+    --bg-2:#10111a;
+    --panel:rgba(255,255,255,0.045);
+    --panel-border:rgba(255,255,255,0.09);
+    --text:#ece7dc;
+    --text-dim:#9b9588;
+    --accent:#d8a44c;
+    --accent-soft:#f0c878;
+    --accent-dim:rgba(216,164,76,0.18);
+    --wood-light:#8a5a34;
+    --wood-dark:#4a2c18;
+    --cell: clamp(28px, 5.4vw, 46px);
+    --radius-lg: 22px;
+    --radius-md: 14px;
+  }
+
+  *{ box-sizing:border-box; }
+
+  html,body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 50% -10%, var(--bg-1) 0%, var(--bg-2) 55%, #090a0e 100%);
+    color:var(--text);
+    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  .display-font{
+    font-family: Georgia, "Times New Roman", serif;
+  }
+
+  /* ===========================================================
+     LAYOUT
+     =========================================================== */
+  .app{
+    max-width:1100px;
+    margin:0 auto;
+    padding: clamp(16px,3vw,36px) clamp(12px,3vw,28px) 60px;
+  }
+
+  header.app-header{
+    text-align:center;
+    margin-bottom: clamp(18px,3vw,30px);
+  }
+
+  header.app-header h1{
+    font-size: clamp(30px, 6vw, 46px);
+    letter-spacing: 0.18em;
+    margin:0 0 6px;
+    color:var(--accent-soft);
+    text-shadow: 0 2px 18px rgba(216,164,76,0.25);
+  }
+
+  header.app-header p{
+    margin:0;
+    color:var(--text-dim);
+    font-size: clamp(13px, 2vw, 15px);
+  }
+
+  /* glass panel utility */
+  .glass{
+    background: var(--panel);
+    border:1px solid var(--panel-border);
+    border-radius: var(--radius-md);
+    backdrop-filter: blur(6px);
+  }
+
+  /* status bar -------------------------------------------------*/
+  .statusbar{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:center;
+    gap:12px;
+    margin-bottom: clamp(18px,3vw,28px);
+  }
+
+  .turn-card{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:10px 18px;
+    font-weight:600;
+    font-size:15px;
+    transition: box-shadow .25s;
+  }
+  .turn-card.black{ box-shadow: 0 0 0 1px rgba(255,255,255,0.05) inset, 0 0 18px rgba(255,255,255,0.05); }
+  .turn-card.white{ box-shadow: 0 0 0 1px rgba(255,255,255,0.05) inset, 0 0 18px rgba(240,200,120,0.18); }
+
+  .dot{
+    width:16px; height:16px; border-radius:50%; flex:none;
+  }
+  .dot.black{ background:radial-gradient(circle at 35% 30%, #6b6b75, #0a0a0d 75%); }
+  .dot.white{ background:radial-gradient(circle at 35% 30%, #ffffff, #b9b2a0 85%); }
+
+  .score-card{
+    display:flex; align-items:center; gap:8px;
+    padding:10px 16px;
+    font-size:14px;
+    color:var(--text-dim);
+  }
+  .score-card b{ color:var(--text); font-size:15px; }
+  .score-card .dot{ width:13px; height:13px; }
+
+  .btn{
+    border:none;
+    cursor:pointer;
+    border-radius: 999px;
+    padding:10px 20px;
+    font-size:14px;
+    font-weight:600;
+    color:#1a1208;
+    background: linear-gradient(135deg, var(--accent-soft), var(--accent));
+    box-shadow: 0 4px 14px rgba(216,164,76,0.35);
+    transition: transform .12s, box-shadow .12s, opacity .12s;
+  }
+  .btn:hover{ transform: translateY(-1px); box-shadow: 0 6px 18px rgba(216,164,76,0.45); }
+  .btn:active{ transform: translateY(0); }
+  .btn.ghost{
+    background:transparent;
+    color:var(--text);
+    border:1px solid var(--panel-border);
+    box-shadow:none;
+  }
+  .btn.ghost:hover{ background: rgba(255,255,255,0.06); }
+  .btn:disabled{ opacity:.35; cursor:not-allowed; transform:none; box-shadow:none; }
+
+  /* main play area ----------------------------------------------*/
+  .play-area{
+    display:flex;
+    gap: clamp(16px,3vw,28px);
+    align-items:flex-start;
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+
+  /* board ---------------------------------------------------------*/
+  #boardPanel{
+    background: radial-gradient(ellipse at 50% 35%, var(--wood-light) 0%, var(--wood-dark) 78%);
+    border-radius: var(--radius-lg);
+    padding: clamp(12px,2.4vw,28px) clamp(14px,2.6vw,30px);
+    box-shadow:
+      0 14px 38px rgba(0,0,0,0.55),
+      inset 0 0 0 5px rgba(0,0,0,0.28),
+      inset 0 0 50px rgba(0,0,0,0.35);
+  }
+
+  #board{ display:flex; flex-direction:column; align-items:center; }
+
+  .row{
+    display:flex;
+    justify-content:center;
+    gap: calc(var(--cell) * 0.14);
+    margin-top: calc(var(--cell) * -0.20);
+  }
+  .row:first-child{ margin-top:0; }
+
+  .cell{
+    width:var(--cell);
+    height:var(--cell);
+    border-radius:50%;
+    flex:none;
+    position:relative;
+    background: radial-gradient(circle at 35% 28%, #3a2818, #1c130b 75%);
+    box-shadow:
+      inset 0 3px 5px rgba(0,0,0,0.65),
+      inset 0 -2px 4px rgba(255,255,255,0.05);
+    transition: transform .12s, box-shadow .15s;
+  }
+
+  .cell.marble.black{
+    background: radial-gradient(circle at 32% 26%, #6e6e78 0%, #2c2c34 45%, #07070a 100%);
+    box-shadow:
+      0 3px 6px rgba(0,0,0,0.55),
+      inset 0 -4px 7px rgba(0,0,0,0.6),
+      inset 0 3px 5px rgba(255,255,255,0.18);
+  }
+
+  .cell.marble.white{
+    background: radial-gradient(circle at 32% 26%, #ffffff 0%, #e9e3d6 45%, #b6ad99 100%);
+    box-shadow:
+      0 3px 6px rgba(0,0,0,0.35),
+      inset 0 -4px 7px rgba(0,0,0,0.18),
+      inset 0 2px 4px rgba(255,255,255,0.7);
+  }
+
+  #board.interactive .cell.own{ cursor:pointer; }
+  #board.interactive .cell.own:hover{
+    transform: scale(1.08);
+    box-shadow: 0 0 0 3px var(--accent-dim), 0 3px 10px rgba(0,0,0,0.5);
+  }
+  #board.interactive .cell.targetable{ cursor:pointer; }
+
+  .cell.selected{
+    box-shadow: 0 0 0 3px var(--accent), 0 0 16px 3px rgba(216,164,76,0.65);
+  }
+
+  /* side panel ------------------------------------------------------*/
+  .side-panel{
+    width: 230px;
+    padding: 18px;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+
+  .side-panel h2{
+    margin:0;
+    font-size:14px;
+    letter-spacing:0.08em;
+    color:var(--text-dim);
+    text-transform:uppercase;
+    text-align:center;
+  }
+
+  .dirpad{
+    display:grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
+    gap:7px;
+    width:150px;
+    margin:0 auto;
+  }
+  .dirpad button{
+    aspect-ratio:1;
+    border-radius:12px;
+    font-size:1.25rem;
+    border:1px solid var(--panel-border);
+    background: rgba(255,255,255,0.04);
+    color:var(--text);
+    cursor:pointer;
+    transition: background .15s, transform .1s, border-color .15s;
+  }
+  .dirpad button:hover:not(:disabled){
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    transform: translateY(-1px);
+  }
+  .dirpad button:disabled{ opacity:.3; cursor:not-allowed; }
+  .dir-nw{ grid-area:1/1; } .dir-ne{ grid-area:1/3; }
+  .dir-w { grid-area:2/1; } .dir-e { grid-area:2/3; }
+  .dir-sw{ grid-area:3/1; } .dir-se{ grid-area:3/3; }
+  .dir-center{
+    grid-area:2/2;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:11px;
+    color:var(--text-dim);
+    border:none;
+    background:none;
+  }
+
+  #statusText{
+    text-align:center;
+    font-size:13px;
+    color:var(--text-dim);
+    min-height:34px;
+    line-height:1.4;
+  }
+
+  /* toast ---------------------------------------------------------*/
+  #toast{
+    position:fixed;
+    bottom:26px;
+    left:50%;
+    transform: translateX(-50%) translateY(20px);
+    background:#241a0c;
+    border:1px solid var(--accent);
+    color: var(--accent-soft);
+    padding:10px 20px;
+    border-radius:999px;
+    font-size:14px;
+    opacity:0;
+    pointer-events:none;
+    transition: opacity .25s, transform .25s;
+    z-index:50;
+  }
+  #toast.show{ opacity:1; transform: translateX(-50%) translateY(0); }
+
+  /* win overlay -----------------------------------------------------*/
+  #winOverlay{
+    position:fixed; inset:0;
+    background: rgba(8,9,13,0.78);
+    display:flex; align-items:center; justify-content:center;
+    opacity:0; pointer-events:none;
+    transition: opacity .3s;
+    z-index:100;
+  }
+  #winOverlay.show{ opacity:1; pointer-events:auto; }
+  .win-box{
+    background: linear-gradient(160deg, #20232f, #14151d);
+    border:1px solid var(--accent);
+    border-radius: var(--radius-lg);
+    padding: 34px 42px;
+    text-align:center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  }
+  .win-box h2{
+    margin:0 0 14px;
+    color:var(--accent-soft);
+    font-size: clamp(24px,4vw,32px);
+  }
+
+  /* responsive ----------------------------------------------------*/
+  @media (max-width: 760px){
+    .play-area{ flex-direction:column; align-items:center; }
+    .side-panel{ width:100%; max-width:320px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <header class="app-header">
+    <h1 class="display-font">ABALONE</h1>
+    <p>Kugelschiebe-Strategiespiel für 2 Spieler</p>
+  </header>
+
+  <!-- Status: aktiver Spieler, Punktestand, Reset -->
+  <div class="statusbar">
+    <div id="turnCard" class="turn-card glass">
+      <span id="turnDot" class="dot black"></span>
+      <span id="turnText">Schwarz ist am Zug</span>
+    </div>
+    <div class="score-card glass">
+      <span class="dot black"></span>
+      <span>Schwarz geschlagen: <b id="blackScore">0 / 6</b></span>
+    </div>
+    <div class="score-card glass">
+      <span class="dot white"></span>
+      <span>Weiß geschlagen: <b id="whiteScore">0 / 6</b></span>
+    </div>
+    <button id="newGameBtn" class="btn">Neues Spiel</button>
+  </div>
+
+  <!-- Hauptbereich: Spielbrett + Bedienpanel -->
+  <div class="play-area">
+
+    <div id="boardPanel">
+      <div id="board"></div>
+    </div>
+
+    <div class="side-panel glass">
+      <h2>Richtung wählen</h2>
+      <div id="dirpad" class="dirpad"></div>
+      <button id="clearSelBtn" class="btn ghost">Auswahl aufheben</button>
+      <div id="statusText">Wähle 1–3 eigene Kugeln in einer Linie aus.</div>
+    </div>
+
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<div id="winOverlay">
+  <div class="win-box">
+    <h2 id="winText">Schwarz hat gewonnen! 🎉</h2>
+    <button id="winNewGameBtn" class="btn">Neues Spiel</button>
+  </div>
+</div>
+
+<script>
+/* =================================================================
+   ABALONE — Datenmodell, Spiellogik und UI-Steuerung
+   Hex-Koordinatensystem: axiale Koordinaten (q, r), s = -q-r
+   Gültige Felder: |q| <= 4, |r| <= 4, |q+r| <= 4  (Hexagon, Radius 4)
+   ================================================================= */
+
+const WIN_SCORE = 6;          // Anzahl gegnerischer Kugeln zum Sieg
+const BOARD_RADIUS = 4;
+
+// Die 6 Richtungen entlang der hexagonalen Achsen.
+// dq/dr = Schrittvektor, cls = CSS-Klasse für das Richtungs-Pad
+const DIRECTIONS = [
+  { name:'NW', dq:0,  dr:-1, label:'↖', cls:'dir-nw' },
+  { name:'NE', dq:1,  dr:-1, label:'↗', cls:'dir-ne' },
+  { name:'W',  dq:-1, dr:0,  label:'←', cls:'dir-w'  },
+  { name:'E',  dq:1,  dr:0,  label:'→', cls:'dir-e'  },
+  { name:'SW', dq:-1, dr:1,  label:'↙', cls:'dir-sw' },
+  { name:'SE', dq:0,  dr:1,  label:'↘', cls:'dir-se' },
+];
+
+/* ---------------- Spielzustand (Datenmodell) ---------------- */
+let board = {};                 // key "q_r" -> { q, r, owner: null|'black'|'white' }
+let currentPlayer = 'black';    // 'black' | 'white'
+let score = { black:0, white:0 }; // Anzahl vom jeweiligen Spieler geschlagener gegnerischer Kugeln
+let selected = [];               // Array von {q,r} – aktuell ausgewählte eigene Kugeln (max. 3, in einer Linie)
+let selectionAxis = null;        // {dq,dr} – Richtung der ausgewählten Linie (gesetzt sobald 2 Kugeln gewählt sind)
+let gameOver = false;
+
+/* ---------------- DOM-Referenzen ---------------- */
+const boardEl       = document.getElementById('board');
+const turnText       = document.getElementById('turnText');
+const turnDot        = document.getElementById('turnDot');
+const turnCard       = document.getElementById('turnCard');
+const blackScoreEl   = document.getElementById('blackScore');
+const whiteScoreEl   = document.getElementById('whiteScore');
+const statusText     = document.getElementById('statusText');
+const dirpadEl       = document.getElementById('dirpad');
+const clearSelBtn    = document.getElementById('clearSelBtn');
+const newGameBtn     = document.getElementById('newGameBtn');
+const winOverlay     = document.getElementById('winOverlay');
+const winText        = document.getElementById('winText');
+const winNewGameBtn  = document.getElementById('winNewGameBtn');
+const toastEl        = document.getElementById('toast');
+
+/* =================================================================
+   DATENMODELL-HILFSFUNKTIONEN
+   ================================================================= */
+
+// Eindeutiger Schlüssel für eine Feldposition
+function key(q, r){ return q + '_' + r; }
+
+// Prüft, ob eine axiale Koordinate innerhalb des Hexagon-Bretts liegt
+function cellExists(q, r){
+  return Math.abs(q) <= BOARD_RADIUS &&
+         Math.abs(r) <= BOARD_RADIUS &&
+         Math.abs(q + r) <= BOARD_RADIUS;
+}
+
+// Liefert den gültigen q-Bereich [qMin, qMax] für eine Zeile r
+function qRange(r){
+  const qMin = Math.max(-BOARD_RADIUS, -BOARD_RADIUS - r);
+  const qMax = Math.min(BOARD_RADIUS,  BOARD_RADIUS - r);
+  return [qMin, qMax];
+}
+
+function getCell(q, r){
+  return board[key(q, r)] || null;
+}
+
+function opponentOf(player){
+  return player === 'black' ? 'white' : 'black';
+}
+
+// Sind zwei Felder direkte Nachbarn (eine der 6 Richtungen)?
+function isNeighbor(c1, c2){
+  return DIRECTIONS.some(d => c1.q + d.dq === c2.q && c1.r + d.dr === c2.r);
+}
+
+/* =================================================================
+   BRETT INITIALISIEREN  (initBoard)
+   Klassische Abalone-Startaufstellung: je 14 Kugeln pro Spieler
+   ================================================================= */
+function initBoard(){
+  board = {};
+  for(let q = -BOARD_RADIUS; q <= BOARD_RADIUS; q++){
+    for(let r = -BOARD_RADIUS; r <= BOARD_RADIUS; r++){
+      if(cellExists(q, r)){
+        board[key(q, r)] = { q, r, owner: null };
+      }
+    }
+  }
+
+  // Schwarz (obere Hälfte des Bretts)
+  placeRow(-4, 0, 4, 'black');      // Reihe mit 5 Feldern – voll
+  placeRow(-3, -1, 4, 'black');     // Reihe mit 6 Feldern – voll
+  placeCells([[0,-2],[1,-2],[2,-2]], 'black'); // Reihe mit 7 Feldern – mittlere 3
+
+  // Weiß (untere Hälfte des Bretts) – Punktsymmetrisch zu Schwarz
+  placeRow(4, -4, 0, 'white');      // Reihe mit 5 Feldern – voll
+  placeRow(3, -4, 1, 'white');      // Reihe mit 6 Feldern – voll
+  placeCells([[-2,2],[-1,2],[0,2]], 'white'); // Reihe mit 7 Feldern – mittlere 3
+}
+
+function placeRow(r, qStart, qEnd, owner){
+  for(let q = qStart; q <= qEnd; q++){
+    board[key(q, r)].owner = owner;
+  }
+}
+
+function placeCells(coords, owner){
+  for(const [q, r] of coords){
+    board[key(q, r)].owner = owner;
+  }
+}
+
+/* =================================================================
+   AUSWAHL-LOGIK (Klick auf eigene Kugeln)
+   ================================================================= */
+function handleCellClick(q, r){
+  if(gameOver) return;
+
+  const cell = getCell(q, r);
+  if(!cell) return;
+
+  const idx = selected.findIndex(c => c.q === q && c.r === r);
+
+  // Fall 1: Bereits ausgewähltes Feld erneut angeklickt -> Auswahl verkleinern/aufheben
+  if(idx !== -1){
+    if(selected.length === 3 && idx === 1){
+      // Mittlere Kugel einer 3er-Linie -> Auswahl komplett zurücksetzen (Linie wäre sonst unterbrochen)
+      selected = [];
+      selectionAxis = null;
+    } else {
+      selected.splice(idx, 1);
+      if(selected.length < 2) selectionAxis = null;
+    }
+    renderBoard();
+    updateInfo();
+    return;
+  }
+
+  // Fall 2: Eigene Kugel angeklickt -> Auswahl aufbauen/erweitern
+  if(cell.owner === currentPlayer){
+    if(selected.length === 0){
+      selected = [{ q, r }];
+    } else if(selected.length === 1){
+      if(isNeighbor(selected[0], { q, r })){
+        selectionAxis = { dq: q - selected[0].q, dr: r - selected[0].r };
+        selected.push({ q, r });
+      } else {
+        // Kein Nachbar der ersten Kugel -> neue Auswahl beginnen
+        selected = [{ q, r }];
+      }
+    } else if(selected.length === 2){
+      const back = selected[0], front = selected[1];
+      if(q === back.q - selectionAxis.dq && r === back.r - selectionAxis.dr){
+        selected.unshift({ q, r });           // Linie nach hinten verlängern
+      } else if(q === front.q + selectionAxis.dq && r === front.r + selectionAxis.dr){
+        selected.push({ q, r });              // Linie nach vorne verlängern
+      } else {
+        selected = [{ q, r }];                // Keine gültige Verlängerung -> neu beginnen
+        selectionAxis = null;
+      }
+    } else {
+      // Bereits 3 Kugeln ausgewählt -> vierte eigene Kugel beginnt neue Auswahl
+      selected = [{ q, r }];
+      selectionAxis = null;
+    }
+  } else {
+    // Fall 3: Leeres Feld oder gegnerische Kugel angeklickt
+    // -> evtl. als direkte Zielangabe für die Zugrichtung interpretieren
+    if(selected.length > 0){
+      const dir = computeDirectionFromClick({ q, r });
+      if(dir){
+        attemptMove(dir);
+        return; // attemptMove ruft bei Erfolg/Fehler selbst render/update auf
+      }
+    }
+    selected = [];
+    selectionAxis = null;
+  }
+
+  renderBoard();
+  updateInfo();
+}
+
+// Leitet aus einem angeklickten Zielfeld die gemeinte Zugrichtung ab
+// (Alternative zur Bedienung über die Richtungstasten)
+function computeDirectionFromClick(target){
+  // Inline-Variante: Zielfeld liegt direkt vor der "Front" der Auswahl
+  for(const dir of DIRECTIONS){
+    let front = null;
+    if(selected.length === 1){
+      front = selected[0];
+    } else if(dir.dq === selectionAxis.dq && dir.dr === selectionAxis.dr){
+      front = selected[selected.length - 1];
+    } else if(dir.dq === -selectionAxis.dq && dir.dr === -selectionAxis.dr){
+      front = selected[0];
+    }
+    if(front && front.q + dir.dq === target.q && front.r + dir.dr === target.r){
+      return dir;
+    }
+  }
+  // Seitwärts-Variante: Zielfeld ist Ziel einer der verschobenen Kugeln
+  if(selected.length >= 2){
+    for(const dir of DIRECTIONS){
+      const isAxis = (dir.dq === selectionAxis.dq && dir.dr === selectionAxis.dr) ||
+                      (dir.dq === -selectionAxis.dq && dir.dr === -selectionAxis.dr);
+      if(isAxis) continue;
+      for(const c of selected){
+        if(c.q + dir.dq === target.q && c.r + dir.dr === target.r) return dir;
+      }
+    }
+  }
+  return null;
+}
+
+/* =================================================================
+   ZUGLOGIK
+   ================================================================= */
+
+// Versucht, die aktuelle Auswahl in die angegebene Richtung zu bewegen
+function attemptMove(dir){
+  if(gameOver || selected.length === 0) return;
+
+  let isInline;
+  if(selected.length === 1){
+    isInline = true;
+  } else {
+    isInline = (dir.dq === selectionAxis.dq && dir.dr === selectionAxis.dr) ||
+                (dir.dq === -selectionAxis.dq && dir.dr === -selectionAxis.dr);
+  }
+
+  if(isInline){
+    doInlineMove(dir);
+  } else {
+    doBroadsideMove(dir);
+  }
+}
+
+// Zug entlang der eigenen Linienrichtung (kann gegnerische Kugeln schieben)
+function doInlineMove(dir){
+  // Vorderste Kugel in Bewegungsrichtung bestimmen
+  let front;
+  if(selected.length === 1){
+    front = selected[0];
+  } else if(dir.dq === selectionAxis.dq && dir.dr === selectionAxis.dr){
+    front = selected[selected.length - 1];
+  } else {
+    front = selected[0];
+  }
+
+  const opponent = opponentOf(currentPlayer);
+
+  // Kette gegnerischer Kugeln direkt vor der Front einsammeln
+  const opponentChain = [];
+  let cur = { q: front.q + dir.dq, r: front.r + dir.dr };
+  while(cellExists(cur.q, cur.r) && getCell(cur.q, cur.r).owner === opponent){
+    opponentChain.push({ q: cur.q, r: cur.r });
+    cur = { q: cur.q + dir.dq, r: cur.r + dir.dr };
+  }
+
+  if(opponentChain.length > 0){
+    // Sumito (Schieben): nur gültig bei numerischer Überlegenheit
+    if(selected.length <= opponentChain.length){
+      showToast('Nicht genug Kugeln, um zu schieben!');
+      return;
+    }
+    // Hinter der gegnerischen Kette muss Platz sein (frei oder Brettrand)
+    if(cellExists(cur.q, cur.r) && getCell(cur.q, cur.r).owner !== null){
+      showToast('Kein Platz zum Schieben – das Feld ist belegt!');
+      return;
+    }
+    // Gegnerische Kette verschieben (von der Spitze aus, damit nichts überschrieben wird)
+    for(let i = opponentChain.length - 1; i >= 0; i--){
+      const oc = opponentChain[i];
+      const dest = { q: oc.q + dir.dq, r: oc.r + dir.dr };
+      if(!cellExists(dest.q, dest.r)){
+        // Kugel wird vom Brett geschoben -> zählt als geschlagen
+        getCell(oc.q, oc.r).owner = null;
+        score[currentPlayer]++;
+      } else {
+        getCell(dest.q, dest.r).owner = opponent;
+        getCell(oc.q, oc.r).owner = null;
+      }
+    }
+  } else {
+    // Kein Gegner im Weg -> Zielfeld der Front muss frei und gültig sein
+    const dest = { q: front.q + dir.dq, r: front.r + dir.dr };
+    if(!cellExists(dest.q, dest.r) || getCell(dest.q, dest.r).owner !== null){
+      showToast('Dieser Zug ist nicht möglich.');
+      return;
+    }
+  }
+
+  // Eigene Kugeln verschieben (von vorne nach hinten, um Felder nicht zu überschreiben)
+  const ordered = selected.length === 1
+    ? [front]
+    : (dir.dq === selectionAxis.dq && dir.dr === selectionAxis.dr ? [...selected].reverse() : [...selected]);
+
+  for(const oc of ordered){
+    const dest = { q: oc.q + dir.dq, r: oc.r + dir.dr };
+    getCell(dest.q, dest.r).owner = currentPlayer;
+    getCell(oc.q, oc.r).owner = null;
+  }
+
+  finishMove();
+}
+
+// Seitwärtszug (Broadside): alle ausgewählten Kugeln parallel verschieben, kein Schieben möglich
+function doBroadsideMove(dir){
+  for(const c of selected){
+    const dest = { q: c.q + dir.dq, r: c.r + dir.dr };
+    if(!cellExists(dest.q, dest.r) || getCell(dest.q, dest.r).owner !== null){
+      showToast('Seitwärtszug nicht möglich – Zielfeld ist blockiert!');
+      return;
+    }
+  }
+
+  const moves = selected.map(c => ({ from:c, to:{ q:c.q+dir.dq, r:c.r+dir.dr } }));
+  for(const m of moves) getCell(m.from.q, m.from.r).owner = null;
+  for(const m of moves) getCell(m.to.q, m.to.r).owner = currentPlayer;
+
+  finishMove();
+}
+
+// Nach erfolgreichem Zug: Auswahl zurücksetzen, Sieg prüfen, Spieler wechseln, UI aktualisieren
+function finishMove(){
+  selected = [];
+  selectionAxis = null;
+  checkWin();
+  if(!gameOver){
+    currentPlayer = opponentOf(currentPlayer);
+  }
+  renderBoard();
+  updateInfo();
+}
+
+// Prüft, ob ein Spieler die Siegbedingung erreicht hat
+function checkWin(){
+  if(score.black >= WIN_SCORE){
+    gameOver = true;
+    showWinBanner('Schwarz');
+  } else if(score.white >= WIN_SCORE){
+    gameOver = true;
+    showWinBanner('Weiß');
+  }
+}
+
+/* =================================================================
+   UI-UPDATE (DOM-Manipulation)
+   ================================================================= */
+
+function isSelected(q, r){
+  return selected.some(c => c.q === q && c.r === r);
+}
+
+// Baut das Brett komplett neu aus dem Datenmodell auf
+function renderBoard(){
+  boardEl.innerHTML = '';
+  boardEl.classList.toggle('interactive', !gameOver);
+
+  for(let r = -BOARD_RADIUS; r <= BOARD_RADIUS; r++){
+    const [qMin, qMax] = qRange(r);
+    const rowEl = document.createElement('div');
+    rowEl.className = 'row';
+
+    for(let q = qMin; q <= qMax; q++){
+      const data = getCell(q, r);
+      const cellEl = document.createElement('div');
+      cellEl.className = 'cell';
+
+      if(data.owner){
+        cellEl.classList.add('marble', data.owner);
+      }
+      if(!gameOver && data.owner === currentPlayer){
+        cellEl.classList.add('own');
+      }
+      if(isSelected(q, r)){
+        cellEl.classList.add('selected');
+      }
+
+      cellEl.addEventListener('click', () => handleCellClick(q, r));
+      rowEl.appendChild(cellEl);
+    }
+    boardEl.appendChild(rowEl);
+  }
+}
+
+// Aktualisiert Statusanzeigen, Punktestand und Bedienelemente
+function updateInfo(){
+  turnText.textContent = currentPlayer === 'black' ? 'Schwarz ist am Zug' : 'Weiß ist am Zug';
+  turnDot.className = 'dot ' + currentPlayer;
+  turnCard.className = 'turn-card glass ' + currentPlayer;
+
+  blackScoreEl.textContent = score.black + ' / ' + WIN_SCORE;
+  whiteScoreEl.textContent = score.white + ' / ' + WIN_SCORE;
+
+  const dirEnabled = selected.length > 0 && !gameOver;
+  dirpadEl.querySelectorAll('button[data-dir]').forEach(btn => btn.disabled = !dirEnabled);
+  clearSelBtn.disabled = selected.length === 0 || gameOver;
+
+  if(gameOver){
+    statusText.textContent = 'Spiel beendet – starte ein neues Spiel.';
+  } else if(selected.length === 0){
+    statusText.textContent = 'Wähle 1–3 eigene Kugeln in einer Linie aus.';
+  } else {
+    statusText.textContent = selected.length + ' Kugel(n) ausgewählt – wähle nun eine Richtung.';
+  }
+}
+
+let toastTimer = null;
+function showToast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
+}
+
+function showWinBanner(winnerLabel){
+  winText.textContent = winnerLabel + ' hat gewonnen! 🎉';
+  winOverlay.classList.add('show');
+}
+
+function hideWinBanner(){
+  winOverlay.classList.remove('show');
+}
+
+/* =================================================================
+   RICHTUNGS-PAD AUFBAUEN
+   ================================================================= */
+function buildDirpad(){
+  dirpadEl.innerHTML = '';
+  for(const dir of DIRECTIONS){
+    const btn = document.createElement('button');
+    btn.className = dir.cls;
+    btn.dataset.dir = dir.name;
+    btn.textContent = dir.label;
+    btn.title = 'Richtung ' + dir.name;
+    btn.addEventListener('click', () => attemptMove(dir));
+    dirpadEl.appendChild(btn);
+  }
+  const center = document.createElement('div');
+  center.className = 'dir-center';
+  center.textContent = '⬡';
+  dirpadEl.appendChild(center);
+}
+
+/* =================================================================
+   SPIEL ZURÜCKSETZEN / STARTEN
+   ================================================================= */
+function resetGame(){
+  initBoard();
+  score = { black:0, white:0 };
+  currentPlayer = 'black';
+  selected = [];
+  selectionAxis = null;
+  gameOver = false;
+  hideWinBanner();
+  renderBoard();
+  updateInfo();
+}
+
+/* =================================================================
+   EVENT-LISTENER & START
+   ================================================================= */
+newGameBtn.addEventListener('click', resetGame);
+winNewGameBtn.addEventListener('click', resetGame);
+clearSelBtn.addEventListener('click', () => {
+  selected = [];
+  selectionAxis = null;
+  renderBoard();
+  updateInfo();
+});
+
+buildDirpad();
+resetGame();
+</script>
+</body>
+</html>

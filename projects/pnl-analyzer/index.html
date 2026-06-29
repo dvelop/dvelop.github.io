@@ -1,0 +1,1101 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>P&amp;L AI — Analyse &amp; Interpretation</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --blue:#4f7df3;--purple:#9455f4;--cyan:#22d3ee;--teal:#0d9488;
+  --grad:linear-gradient(135deg,#4f7df3 0%,#9455f4 100%);
+  --grad-ol:linear-gradient(135deg,#0d9488 0%,#4f7df3 100%);
+  --bg:#040711;--surf:#070c1b;--surf2:#0b1128;--surf3:#101830;
+  --border:rgba(110,90,230,0.13);--border-b:rgba(110,90,230,0.28);
+  --text:#e4ecf8;--text-d:#aab8d4;--muted:#6a7a9b;
+  --green:#22c55e;--gd:rgba(34,197,94,.12);
+  --yellow:#f59e0b;--yd:rgba(245,158,11,.12);
+  --red:#ef4444;--rd:rgba(239,68,68,.12);
+  --r:12px;--rs:8px;
+  font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,-apple-system,sans-serif;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%}
+body{background:var(--bg);background-image:radial-gradient(ellipse 55% 35% at 8% 8%,rgba(79,125,243,.09) 0%,transparent 65%),radial-gradient(ellipse 50% 38% at 92% 85%,rgba(148,85,244,.09) 0%,transparent 65%);color:var(--text);display:flex;flex-direction:column;align-items:center;padding:22px 18px;-webkit-font-smoothing:antialiased;}
+.app{width:100%;max-width:1360px;display:flex;flex-direction:column;gap:18px}
+
+/* ── Header ── */
+.hdr{display:flex;gap:14px;align-items:center;padding:18px 22px;background:var(--surf);border:1px solid var(--border);border-radius:var(--r);position:relative;overflow:hidden;}
+.hdr::before{content:'';position:absolute;inset:0;background:var(--grad);opacity:.04;pointer-events:none}
+.logo{width:50px;height:50px;border-radius:11px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:15px;letter-spacing:-.5px;flex-shrink:0;box-shadow:0 0 22px rgba(79,125,243,.4),0 0 44px rgba(148,85,244,.18);}
+.hdr-text h1{font-size:17px;font-weight:700;letter-spacing:-.3px;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hdr-text p{font-size:12px;color:var(--muted);margin-top:2px}
+.hdr-right{margin-left:auto;display:flex;gap:8px;align-items:center;flex-shrink:0}
+.badge{padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600;border:1px solid var(--border-b);color:var(--text-d)}
+.status-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;font-size:11px;font-weight:600;background:rgba(79,125,243,.1);border:1px solid rgba(79,125,243,.25);color:var(--blue);}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--blue);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.settings-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:var(--rs);border:1px solid var(--border-b);background:transparent;color:var(--text-d);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;}
+.settings-btn:hover{background:rgba(255,255,255,.05);color:var(--text)}
+
+/* ── Grid ── */
+.grid{display:grid;grid-template-columns:400px 1fr;gap:18px;align-items:start}
+
+/* ── Left ── */
+.left{display:flex;flex-direction:column;gap:11px;position:sticky;top:22px;max-height:calc(100vh - 44px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border-b) transparent;}
+.left::-webkit-scrollbar{width:4px}.left::-webkit-scrollbar-thumb{background:var(--border-b);border-radius:4px}
+
+/* ── Cards ── */
+.card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.card-hdr{padding:12px 14px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px;}
+.card-icon{width:26px;height:26px;border-radius:6px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;}
+.card-title{font-size:12px;font-weight:700;color:var(--text)}.card-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.card-body{padding:12px 14px;display:flex;flex-direction:column;gap:9px}
+
+/* ── Cat sections ── */
+.cat{background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);overflow:hidden}
+.cat-hdr{padding:9px 12px;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--border);}
+.cat-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.cat-dot.rv{background:var(--blue)}.cat-dot.cg{background:var(--red)}.cat-dot.op{background:var(--yellow)}.cat-dot.ot{background:var(--purple)}
+.cat-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-d)}
+.cat-tot{margin-left:auto;font-size:11px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--text-d)}
+.cat-items{display:flex;flex-direction:column}
+.ci{display:flex;gap:5px;align-items:center;padding:5px 10px;border-bottom:1px solid rgba(255,255,255,.025);transition:background .1s;}
+.ci:last-child{border-bottom:none}.ci:hover{background:rgba(255,255,255,.02)}
+.ci input[type=text]{flex:1;min-width:0;padding:4px 7px;font-size:12px;background:transparent;border:1px solid transparent;color:var(--text);border-radius:5px;font-family:inherit;outline:none;transition:border-color .15s;}
+.ci input[type=text]:focus{background:var(--surf3);border-color:var(--border-b)}
+.ci input[type=number]{width:86px;flex-shrink:0;padding:4px 7px;font-size:12px;text-align:right;background:transparent;border:1px solid transparent;color:var(--text);border-radius:5px;font-family:'JetBrains Mono',monospace;outline:none;transition:border-color .15s;}
+.ci input[type=number]:focus{background:var(--surf3);border-color:var(--border-b)}
+.cat-add{padding:7px 10px;display:flex;gap:5px;align-items:center;background:rgba(255,255,255,.01);border-top:1px solid var(--border);flex-wrap:wrap;}
+.cat-add select,.cat-add input{padding:5px 7px;font-size:12px;flex:1;min-width:80px;background:var(--surf3);border:1px solid var(--border);color:var(--text);border-radius:5px;font-family:inherit;outline:none;}
+.cat-add select:focus,.cat-add input:focus{border-color:var(--border-b)}
+.tax-row{display:flex;align-items:center;gap:7px;padding:0 10px 9px}
+.tax-row label{font-size:11px;color:var(--muted)}
+.tax-row input{width:70px;padding:4px 7px;font-size:12px;font-family:'JetBrains Mono',monospace;background:var(--surf3);border:1px solid var(--border);color:var(--text);border-radius:5px;outline:none;}
+.tax-row input:focus{border-color:var(--border-b)}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;border-radius:var(--rs);border:none;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:opacity .15s,transform .1s,box-shadow .15s;white-space:nowrap;}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
+.bp{background:var(--grad);color:#fff;padding:8px 13px;box-shadow:0 2px 10px rgba(79,125,243,.22)}
+.bp:hover{box-shadow:0 4px 18px rgba(79,125,243,.38)}
+.bg{background:transparent;border:1px solid var(--border-b);color:var(--text-d);padding:7px 12px}
+.bg:hover{background:rgba(255,255,255,.04)}
+.ba{background:rgba(34,197,94,.14);border:1px solid rgba(34,197,94,.28);color:var(--green);padding:5px 9px;font-size:14px;line-height:1}
+.ba:hover{background:rgba(34,197,94,.24)}
+.bs{background:rgba(79,125,243,.13);border:1px solid rgba(79,125,243,.28);color:var(--blue);padding:3px 7px;font-size:11px}
+.br{background:var(--rd);border:1px solid rgba(239,68,68,.22);color:var(--red);padding:3px 7px;font-size:11px}
+.br:hover{background:rgba(239,68,68,.2)}
+.bt{background:rgba(13,148,136,.14);border:1px solid rgba(13,148,136,.28);color:var(--teal);padding:5px 10px;font-size:12px}
+.bt:hover{background:rgba(13,148,136,.24)}
+.analyze-btn{background:var(--grad);color:#fff;padding:12px;font-size:13px;font-weight:700;width:100%;box-shadow:0 4px 18px rgba(79,125,243,.3);border-radius:var(--rs);}
+.analyze-btn:hover{box-shadow:0 6px 26px rgba(79,125,243,.48)}
+.ollama-analyze-btn{background:var(--grad-ol);color:#fff;padding:9px 20px;font-size:13px;font-weight:700;box-shadow:0 3px 14px rgba(13,148,136,.25);border-radius:var(--rs);}
+.ollama-analyze-btn:hover{box-shadow:0 5px 22px rgba(13,148,136,.4)}
+
+/* ── KPI grid ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
+.kpi{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:13px 14px;position:relative;overflow:hidden;transition:border-color .2s,box-shadow .2s;}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi.good::before{background:var(--green)}.kpi.warn::before{background:var(--yellow)}.kpi.bad::before{background:var(--red)}.kpi.neutral::before{background:var(--grad)}
+.kpi.good{border-color:rgba(34,197,94,.18)}.kpi.warn{border-color:rgba(245,158,11,.18)}.kpi.bad{border-color:rgba(239,68,68,.18)}
+.kpi-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.kpi-val{font-size:20px;font-weight:800;font-family:'JetBrains Mono',monospace;margin-top:4px;letter-spacing:-.5px}
+.kpi.good .kpi-val{color:var(--green)}.kpi.warn .kpi-val{color:var(--yellow)}.kpi.bad .kpi-val{color:var(--red)}
+.kpi.neutral .kpi-val{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.kpi-sub{font-size:10px;color:var(--muted);margin-top:2px;font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi-dot{position:absolute;top:12px;right:12px;width:7px;height:7px;border-radius:50%}
+.kpi.good .kpi-dot{background:var(--green);box-shadow:0 0 5px var(--green)}.kpi.warn .kpi-dot{background:var(--yellow);box-shadow:0 0 5px var(--yellow)}.kpi.bad .kpi-dot{background:var(--red);box-shadow:0 0 5px var(--red)}.kpi.neutral .kpi-dot{background:var(--blue);box-shadow:0 0 5px var(--blue)}
+
+/* ── Panels ── */
+.panel{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:15px}
+.sec-title{font-size:12px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:7px;margin-bottom:13px;}
+.sec-title::before{content:'';display:block;width:3px;height:13px;background:var(--grad);border-radius:99px;flex-shrink:0;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+#wfCanvas{display:block;width:100%}
+
+/* ── Donut ── */
+.donut-wrap{display:flex;flex-direction:column;gap:10px}
+.donut-legend{display:flex;flex-direction:column;gap:5px;font-size:11px}
+.dl-item{display:flex;align-items:center;gap:6px;color:var(--muted)}
+.dl-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dl-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dl-pct{font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--text-d)}
+
+/* ── P&L Table ── */
+.pl-tbl{width:100%;border-collapse:collapse;font-size:12px;font-family:'JetBrains Mono',monospace}
+.pl-tbl tr{border-bottom:1px solid var(--border)}.pl-tbl tr:last-child{border-bottom:none}
+.pl-tbl td{padding:5px 7px;color:var(--text-d)}.pl-tbl td:last-child{text-align:right}
+.pl-sec td{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding-top:11px}
+.pl-indent td:first-child{padding-left:18px;font-size:11px}
+.pl-total td{font-weight:700;color:var(--text);border-top:1px solid var(--border-b);padding-top:7px}
+.pos td:last-child{color:var(--green)}.neg td:last-child{color:var(--red)}
+.hl td{background:rgba(79,125,243,.06)}.hl.pos td:last-child{color:var(--blue)}
+
+/* ── Flags ── */
+.flags{display:flex;flex-direction:column;gap:6px}
+.flag{background:var(--yd);border:1px solid rgba(245,158,11,.22);border-radius:var(--rs);padding:8px 11px;display:flex;gap:8px;align-items:flex-start;}
+.flag.fr{background:var(--rd);border-color:rgba(239,68,68,.22)}
+.flag-ico{font-size:13px;flex-shrink:0;margin-top:1px}
+.flag-title{font-size:11px;font-weight:700;color:var(--yellow);margin-bottom:2px}
+.flag.fr .flag-title{color:var(--red)}.flag-desc{font-size:11px;color:var(--text-d)}
+
+/* ── Interp ── */
+.interp-pre{font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;color:var(--text-d);line-height:1.7;white-space:pre-wrap;margin-top:10px;}
+
+/* ── Claude AI card ── */
+.ai-card{background:var(--surf);border:1px solid var(--border-b);border-radius:var(--r);padding:15px;position:relative;overflow:hidden;}
+.ai-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(79,125,243,.04),rgba(148,85,244,.04));pointer-events:none;}
+.ai-key-row{display:flex;gap:7px;align-items:center;margin-top:9px;flex-wrap:wrap}
+.ai-key-row input{flex:1;padding:7px 10px;font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--surf3);border:1px solid var(--border);color:var(--text);border-radius:var(--rs);outline:none;}
+.ai-key-row input:focus{border-color:var(--border-b)}
+.ai-out{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:13px}
+.ai-blk{background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);padding:11px}
+.ai-blk-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px}
+.ai-blk pre{font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;color:var(--text-d);line-height:1.7;white-space:pre-wrap}
+
+/* ── Ollama card ── */
+.ollama-card{background:var(--surf);border:1px solid rgba(13,148,136,.3);border-radius:var(--r);padding:15px;position:relative;overflow:hidden;}
+.ollama-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(13,148,136,.05),rgba(79,125,243,.04));pointer-events:none;}
+.ollama-meta{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 12px}
+.ometa-tag{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600;background:rgba(13,148,136,.1);border:1px solid rgba(13,148,136,.22);color:var(--teal);}
+.ollama-btn-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ollama-out{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:13px}
+.ollama-blk{background:var(--surf2);border:1px solid rgba(13,148,136,.15);border-radius:var(--rs);padding:11px}
+.ollama-blk-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px}
+.stream-out{font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;color:var(--text-d);line-height:1.7;white-space:pre-wrap;min-height:40px;}
+.cursor{display:inline-block;width:2px;height:13px;background:var(--teal);border-radius:1px;vertical-align:text-bottom;margin-left:1px;animation:blink .75s ease infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.prog-wrap{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);margin-top:10px}
+.prog-bar-bg{flex:1;height:3px;background:var(--surf3);border-radius:99px;overflow:hidden}
+.prog-bar{height:100%;background:var(--grad-ol);border-radius:99px;width:0%;transition:width .2s}
+
+/* ── Details ── */
+.det-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+.det-blk{background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);padding:10px 12px}
+.det-blk-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px}
+.det-blk pre{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-d);line-height:1.75;white-space:pre-wrap}
+
+/* ── Spinner ── */
+.spinner{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ══════════════════════════════════════════
+   SETTINGS PANEL
+══════════════════════════════════════════ */
+.s-overlay{position:fixed;inset:0;background:rgba(4,7,17,.72);backdrop-filter:blur(5px);z-index:200;opacity:0;pointer-events:none;transition:opacity .25s;}
+.s-overlay.open{opacity:1;pointer-events:auto}
+.s-panel{position:fixed;top:0;right:-490px;bottom:0;width:490px;background:var(--surf);border-left:1px solid var(--border-b);z-index:201;display:flex;flex-direction:column;transition:right .3s cubic-bezier(.4,0,.2,1);overflow:hidden;}
+.s-panel.open{right:0}
+.s-hdr{display:flex;align-items:center;gap:10px;padding:18px 20px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.s-hdr-icon{width:32px;height:32px;border-radius:8px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.s-hdr h2{font-size:15px;font-weight:700;flex:1}
+.s-close{background:transparent;border:1px solid var(--border-b);color:var(--text-d);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;font-family:inherit;transition:all .15s;}
+.s-close:hover{background:var(--rd);border-color:transparent;color:var(--red)}
+.s-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surf2);}
+.stab{flex:1;padding:11px;font-family:inherit;font-size:12px;font-weight:600;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;transition:all .15s;}
+.stab:hover{color:var(--text-d)}.stab.active{color:var(--blue);border-bottom-color:var(--blue);background:rgba(79,125,243,.06);}
+.s-body{flex:1;overflow-y:auto;padding:18px 20px;scrollbar-width:thin;scrollbar-color:var(--border-b) transparent;display:flex;flex-direction:column;gap:14px;}
+.s-body::-webkit-scrollbar{width:4px}.s-body::-webkit-scrollbar-thumb{background:var(--border-b);border-radius:4px}
+.s-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;background:var(--surf2);flex-shrink:0;}
+.s-tab-content{display:none;flex-direction:column;gap:14px}.s-tab-content.active{display:flex}
+
+/* Settings form elements */
+.srow{display:flex;flex-direction:column;gap:6px}
+.slbl{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:600;color:var(--text-d);}
+.slbl-val{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--blue);font-weight:700}
+.sinput{width:100%;padding:8px 10px;background:var(--surf3);border:1px solid var(--border);color:var(--text);border-radius:var(--rs);font-family:inherit;font-size:12px;outline:none;transition:border-color .15s;}
+.sinput:focus{border-color:var(--border-b);box-shadow:0 0 0 2px rgba(79,125,243,.1)}
+.sinput:disabled{opacity:.5;cursor:not-allowed}
+textarea.sinput{resize:vertical;min-height:80px;line-height:1.6}
+.srange{width:100%;height:4px;background:var(--surf3);border-radius:99px;outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;accent-color:var(--blue);margin-top:4px;}
+.srange::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--grad);box-shadow:0 0 8px rgba(79,125,243,.45);cursor:pointer;}
+.sdivider{height:1px;background:var(--border)}
+.sinfo{font-size:11px;color:var(--muted);line-height:1.7;padding:10px 12px;background:rgba(79,125,243,.06);border:1px solid rgba(79,125,243,.12);border-radius:var(--rs);}
+.sinfo code{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--blue);background:rgba(79,125,243,.1);padding:1px 5px;border-radius:4px}
+.sinfo-ol{font-size:11px;color:var(--muted);line-height:1.7;padding:10px 12px;background:rgba(13,148,136,.06);border:1px solid rgba(13,148,136,.15);border-radius:var(--rs);}
+.sinfo-ol code{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--teal);background:rgba(13,148,136,.1);padding:1px 5px;border-radius:4px}
+.conn-row{display:flex;gap:7px;align-items:center}
+.conn-ind{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:5px 9px;border-radius:99px;background:var(--surf3);border:1px solid var(--border);color:var(--muted);white-space:nowrap;}
+.conn-ind.ok{background:var(--gd);border-color:rgba(34,197,94,.25);color:var(--green)}
+.conn-ind.err{background:var(--rd);border-color:rgba(239,68,68,.25);color:var(--red)}
+.conn-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+.model-row{display:flex;gap:6px}
+.model-row select{flex:1}
+
+/* KB */
+.kb-actions{display:flex;gap:6px;flex-wrap:wrap}
+.kb-list{display:flex;flex-direction:column;gap:6px}
+.kb-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surf2);border:1px solid var(--border);border-radius:var(--rs);}
+.kb-ico{font-size:14px;flex-shrink:0}.kb-name{flex:1;font-size:12px;color:var(--text-d);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kb-sz{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.kb-empty{font-size:12px;color:var(--muted);text-align:center;padding:22px 12px;background:var(--surf2);border:1px dashed var(--border);border-radius:var(--rs);line-height:1.6}
+.kb-hdr{display:flex;align-items:center;justify-content:space-between}
+.kb-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;background:rgba(13,148,136,.1);border:1px solid rgba(13,148,136,.22);color:var(--teal);}
+
+/* ── Footer ── */
+.footer{display:flex;justify-content:space-between;align-items:center;padding:11px 15px;background:var(--surf);border:1px solid var(--border);border-radius:var(--r);font-size:11px;color:var(--muted);}
+.footer code{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-d)}
+
+/* ── Responsive ── */
+@media(max-width:1100px){.grid{grid-template-columns:1fr}.left{position:static;max-height:none;overflow-y:visible}}
+@media(max-width:800px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.two-col,.ai-out,.ollama-out,.det-grid{grid-template-columns:1fr}.s-panel{width:100%;right:-100%}.hdr-right .badge{display:none}}
+@media(max-width:500px){body{padding:10px}.kpi-grid{grid-template-columns:1fr 1fr}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.fade{animation:fadeUp .25s ease}
+</style>
+</head>
+<body>
+
+<!-- ══ Settings overlay + panel ══ -->
+<div class="s-overlay" id="sOverlay"></div>
+<div class="s-panel" id="sPanel">
+  <div class="s-hdr">
+    <div class="s-hdr-icon">⚙️</div>
+    <h2>Einstellungen</h2>
+    <button class="s-close" id="sClose">✕</button>
+  </div>
+  <div class="s-tabs">
+    <button class="stab active" data-tab="ollama">🦙 Ollama</button>
+    <button class="stab" data-tab="kb">📚 Wissensdatenbank</button>
+  </div>
+  <div class="s-body">
+
+    <!-- Tab: Ollama -->
+    <div class="s-tab-content active" id="stab-ollama">
+      <div class="sinfo-ol">
+        Starte Ollama mit CORS-Erlaubnis:<br>
+        <code>OLLAMA_ORIGINS=* ollama serve</code><br>
+        Modell installieren: <code>ollama pull llama3.2</code>
+      </div>
+
+      <div class="srow">
+        <div class="slbl">Ollama Base URL</div>
+        <div class="conn-row">
+          <input class="sinput" id="cfgUrl" type="text" value="http://localhost:11434" style="flex:1"/>
+          <button class="btn bt" id="testConnBtn">Testen</button>
+          <div class="conn-ind" id="connInd"><div class="conn-dot"></div><span id="connTxt">—</span></div>
+        </div>
+      </div>
+
+      <div class="sdivider"></div>
+
+      <div class="srow">
+        <div class="slbl">Modell</div>
+        <div class="model-row">
+          <select class="sinput" id="cfgModelSel" style="flex:1">
+            <option value="">— Modell wählen oder manuell eingeben —</option>
+          </select>
+          <button class="btn bt" id="fetchModelsBtn">Laden</button>
+        </div>
+        <input class="sinput" id="cfgModel" type="text" placeholder="z.B. llama3.2, mistral, qwen2.5, gemma3" style="margin-top:4px"/>
+      </div>
+
+      <div class="sdivider"></div>
+
+      <div class="srow">
+        <div class="slbl">Kontext-Länge (num_ctx)</div>
+        <select class="sinput" id="cfgCtx">
+          <option value="2048">2 048 Token</option>
+          <option value="4096" selected>4 096 Token</option>
+          <option value="8192">8 192 Token</option>
+          <option value="16384">16 384 Token</option>
+          <option value="32768">32 768 Token</option>
+        </select>
+      </div>
+
+      <div class="srow">
+        <div class="slbl">Temperatur <span class="slbl-val" id="cfgTempVal">0.70</span></div>
+        <input class="srange" id="cfgTemp" type="range" min="0" max="2" step="0.05" value="0.7"/>
+      </div>
+
+      <div class="srow">
+        <div class="slbl">Top P <span class="slbl-val" id="cfgTopPVal">0.90</span></div>
+        <input class="srange" id="cfgTopP" type="range" min="0.05" max="1" step="0.05" value="0.9"/>
+      </div>
+
+      <div class="srow">
+        <div class="slbl">Seed <span style="font-size:11px;color:var(--muted);font-weight:400">(0 = zufällig)</span></div>
+        <input class="sinput" id="cfgSeed" type="number" value="0" min="0"/>
+      </div>
+
+      <div class="sdivider"></div>
+
+      <div class="srow">
+        <div class="slbl">System-Prompt</div>
+        <textarea class="sinput" id="cfgSysPrompt" rows="6">Du bist ein erfahrener CFO-Berater und Finanzanalyst für Schweizer Unternehmen. Du analysierst Profit & Loss Statements präzise und gibst datengetriebene, konkrete Empfehlungen auf Deutsch. Nutze die bereitgestellte Wissensdatenbank als zusätzlichen Kontext, falls vorhanden.</textarea>
+      </div>
+    </div>
+
+    <!-- Tab: Wissensdatenbank -->
+    <div class="s-tab-content" id="stab-kb">
+      <div class="sinfo">
+        Lade <code>.md</code>-Dateien als Wissenskontext für Ollama.<br>
+        Auto-Laden: Erstelle <code>knowledgebase/index.json</code>:<br>
+        <code>["branchenanalyse.md", "benchmarks.md"]</code>
+      </div>
+
+      <div class="kb-actions">
+        <label class="btn bt" style="cursor:pointer">
+          📂 MD-Dateien laden
+          <input type="file" id="kbUpload" accept=".md,.txt" multiple style="display:none"/>
+        </label>
+        <button class="btn bg" id="kbAutoLoad">⬇ Auto aus knowledgebase/</button>
+        <button class="btn br" id="kbClear">Alle löschen</button>
+      </div>
+
+      <div class="kb-hdr">
+        <div style="font-size:12px;font-weight:600;color:var(--text-d)">Geladene Dateien</div>
+        <div class="kb-badge" id="kbCount">0 Dateien</div>
+      </div>
+
+      <div class="kb-list" id="kbList">
+        <div class="kb-empty">Keine Wissensdatenbank geladen.<br>Dateien hochladen oder auto-laden.</div>
+      </div>
+    </div>
+
+  </div>
+  <div class="s-footer">
+    <button class="btn bp" id="sSave" style="flex:1">✓ Einstellungen speichern</button>
+    <button class="btn bg" id="sReset">Zurücksetzen</button>
+  </div>
+</div>
+
+<!-- ══ App ══ -->
+<div class="app">
+
+  <header class="hdr">
+    <div class="logo">P&amp;L</div>
+    <div class="hdr-text">
+      <h1>P&amp;L AI — Analyse &amp; Interpretation</h1>
+      <p>Dynamisches Formular · Templates · Charts · KPI-Ampel · Claude &amp; Ollama KI · Wissensdatenbank</p>
+    </div>
+    <div class="hdr-right">
+      <div class="badge">v3.0</div>
+      <div class="status-pill"><div class="sdot"></div><span id="statusTxt">Bereit</span></div>
+      <button class="settings-btn" id="openSettings">⚙ Einstellungen</button>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <!-- ════ LEFT: Inputs ════ -->
+    <div class="left">
+
+      <div class="card">
+        <div class="card-hdr">
+          <div class="card-icon">📋</div>
+          <div><div class="card-title">Vorlagen &amp; Import</div><div class="card-sub">Templates laden oder Daten importieren</div></div>
+        </div>
+        <div class="card-body">
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <select id="templateSelect" style="flex:1;padding:7px 8px;font-size:12px;background:var(--surf3);border:1px solid var(--border);color:var(--text);border-radius:var(--rs);outline:none"></select>
+            <button type="button" id="loadTplBtn" class="btn bg">Laden</button>
+            <button type="button" id="saveTplBtn" class="btn bg">Speichern</button>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <input id="importFile" type="file" accept="application/json" style="flex:1;font-size:11px;background:transparent;border:1px solid var(--border);border-radius:var(--rs);padding:5px 7px;color:var(--muted)"/>
+            <button type="button" id="importBtn" class="btn bg">↑ Import</button>
+            <button type="button" id="exportBtn" class="btn bg">↓ Export</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="cat">
+        <div class="cat-hdr"><div class="cat-dot rv"></div><span class="cat-label">Umsatzkategorien</span><span class="cat-tot" id="revTot">—</span></div>
+        <div class="cat-items" id="revenueList"></div>
+        <div class="cat-add">
+          <select id="revPreset"><option value="__c">Eigener Name…</option><option value="Beratung">Beratung (Consulting)</option><option value="Projekte">Projekte (Implementation)</option><option value="Support">Support &amp; Managed Services</option><option value="Subscription">Subscription</option><option value="Produktverkäufe">Produktverkäufe</option><option value="Sonstiges">Sonstige Einnahmen</option></select>
+          <input id="revName" type="text" placeholder="Name"/>
+          <input id="revAmt" type="number" placeholder="CHF" style="width:80px;flex:none"/>
+          <button type="button" id="addRevBtn" class="btn ba">+</button>
+        </div>
+      </div>
+
+      <div class="cat">
+        <div class="cat-hdr"><div class="cat-dot cg"></div><span class="cat-label">Direkte Kosten (COGS)</span><span class="cat-tot" id="cogsTot">—</span></div>
+        <div class="cat-items" id="cogsList"></div>
+        <div class="cat-add">
+          <select id="cogsPreset"><option value="__c">Eigener Name…</option><option value="Löhne billable FTEs">Löhne billable FTEs</option><option value="Externe Spezialisten">Externe Spezialisten</option><option value="Wareneinsatz">Wareneinsatz</option><option value="Lizenzen">Software-Lizenzen</option><option value="Spesen">Reisespesen &amp; Material</option><option value="Retouren">Retouren</option></select>
+          <input id="cogsName" type="text" placeholder="Name"/>
+          <input id="cogsAmt" type="number" placeholder="CHF" style="width:80px;flex:none"/>
+          <button type="button" id="addCogsBtn" class="btn ba">+</button>
+        </div>
+      </div>
+
+      <div class="cat">
+        <div class="cat-hdr"><div class="cat-dot op"></div><span class="cat-label">Operative Kosten (OPEX)</span><span class="cat-tot" id="opexTot">—</span></div>
+        <div class="cat-items" id="opexList"></div>
+        <div class="cat-add">
+          <select id="opexPreset"><option value="__c">Eigener Name…</option><option value="Löhne non-billable">Löhne non-billable</option><option value="Marketing">Marketing &amp; Sales</option><option value="IT Tools">IT-Infrastruktur &amp; Tools</option><option value="Miete">Miete &amp; Betriebskosten</option><option value="R&amp;D">R&amp;D / Produktentwicklung</option><option value="Logistik">Logistik &amp; Fulfillment</option></select>
+          <input id="opexName" type="text" placeholder="Name"/>
+          <input id="opexAmt" type="number" placeholder="CHF" style="width:80px;flex:none"/>
+          <button type="button" id="addOpexBtn" class="btn ba">+</button>
+        </div>
+      </div>
+
+      <div class="cat">
+        <div class="cat-hdr"><div class="cat-dot ot"></div><span class="cat-label">Abschreibungen &amp; Finanzen</span><span class="cat-tot" id="otherTot">—</span></div>
+        <div class="cat-items" id="otherList"></div>
+        <div class="cat-add">
+          <select id="otherPreset"><option value="__c">Eigener Name…</option><option value="Abschreibungen HW">Abschreibungen Hardware</option><option value="Abschreibungen SW">Abschreibungen Software</option><option value="Zinsaufwand">Zinsaufwand</option><option value="Zinsertrag">Zinsertrag</option><option value="Sonstiges">Sonstiges</option></select>
+          <input id="otherName" type="text" placeholder="Name"/>
+          <input id="otherAmt" type="number" placeholder="CHF" style="width:80px;flex:none"/>
+          <button type="button" id="addOtherBtn" class="btn ba">+</button>
+        </div>
+        <div class="tax-row"><label for="taxRate">Steuersatz</label><input id="taxRate" type="number" step="0.1" value="14"/><span style="font-size:11px;color:var(--muted)">%</span></div>
+      </div>
+
+      <button type="button" id="analyzeBtn" class="btn analyze-btn">⚡ Jetzt Analysieren</button>
+      <button type="button" id="resetBtn" class="btn bg" style="font-size:12px;padding:8px">↺ Zurücksetzen</button>
+    </div>
+
+    <!-- ════ RIGHT: Results ════ -->
+    <div class="right">
+
+      <div class="kpi-grid">
+        <div class="kpi neutral" id="kpi0"><div class="kpi-dot"></div><div class="kpi-lbl">Umsatz Total</div><div class="kpi-val" id="m_rev">—</div><div class="kpi-sub" id="m_rev_b">—</div></div>
+        <div class="kpi neutral" id="kpi1"><div class="kpi-dot"></div><div class="kpi-lbl">Bruttomarge</div><div class="kpi-val" id="m_gm">—</div><div class="kpi-sub" id="m_gp">—</div></div>
+        <div class="kpi neutral" id="kpi2"><div class="kpi-dot"></div><div class="kpi-lbl">EBITDA‑Marge</div><div class="kpi-val" id="m_em">—</div><div class="kpi-sub" id="m_e">—</div></div>
+        <div class="kpi neutral" id="kpi3"><div class="kpi-dot"></div><div class="kpi-lbl">EBIT‑Marge</div><div class="kpi-val" id="m_eim">—</div><div class="kpi-sub" id="m_ei">—</div></div>
+        <div class="kpi neutral" id="kpi4"><div class="kpi-dot"></div><div class="kpi-lbl">Netto‑Marge</div><div class="kpi-val" id="m_nm">—</div><div class="kpi-sub" id="m_n">—</div></div>
+        <div class="kpi neutral" id="kpi5"><div class="kpi-dot"></div><div class="kpi-lbl">COGS‑Quote</div><div class="kpi-val" id="m_cq">—</div><div class="kpi-sub" id="m_oq">—</div></div>
+      </div>
+
+      <div class="panel"><div class="sec-title">P&amp;L Wasserfall — Ergebniskaskade</div><canvas id="wfCanvas" height="195"></canvas></div>
+
+      <div class="two-col">
+        <div class="panel"><div class="sec-title">COGS Aufschlüsselung</div><div class="donut-wrap" id="cogsDonut"><div style="font-size:12px;color:var(--muted)">Analyse starten…</div></div></div>
+        <div class="panel"><div class="sec-title">OPEX Aufschlüsselung</div><div class="donut-wrap" id="opexDonut"><div style="font-size:12px;color:var(--muted)">Analyse starten…</div></div></div>
+      </div>
+
+      <div class="panel"><div class="sec-title">Gewinn- &amp; Verlustrechnung (G&amp;V)</div><table class="pl-tbl"><tbody id="plBody"><tr><td colspan="2" style="color:var(--muted);font-size:12px">Analyse starten…</td></tr></tbody></table></div>
+
+      <div class="panel fade" id="flagsPanel" style="display:none"><div class="sec-title">⚠ Warnsignale &amp; Handlungsbedarf</div><div class="flags" id="flagsList"></div></div>
+
+      <div class="two-col">
+        <div class="panel"><div class="sec-title">Investor-Interpretation</div><pre class="interp-pre" id="investorPre">Klicke auf "Analysieren" …</pre></div>
+        <div class="panel"><div class="sec-title">CEO-Empfehlungen</div><pre class="interp-pre" id="ceoPre">Klicke auf "Analysieren" …</pre></div>
+      </div>
+
+      <!-- Claude AI -->
+      <div class="ai-card">
+        <div class="sec-title" style="margin-bottom:4px">🤖 Claude KI-Analyse</div>
+        <div style="font-size:12px;color:var(--muted)">Tiefgehende Analyse via Anthropic API (eigener API Key erforderlich).</div>
+        <div class="ai-key-row">
+          <input id="aiKey" type="password" placeholder="Anthropic API Key (sk-ant-…)"/>
+          <button type="button" id="aiBtn" class="btn bp">Claude Analysieren</button>
+        </div>
+        <div class="ai-out" id="aiOut" style="display:none">
+          <div class="ai-blk"><div class="ai-blk-title" style="color:var(--blue)">📈 Investor-Perspektive</div><pre id="aiInv">—</pre></div>
+          <div class="ai-blk"><div class="ai-blk-title" style="color:var(--purple)">🎯 CEO-Empfehlungen</div><pre id="aiCeo">—</pre></div>
+        </div>
+      </div>
+
+      <!-- Ollama AI -->
+      <div class="ollama-card">
+        <div class="sec-title" style="margin-bottom:4px">🦙 Ollama KI-Analyse (Lokal &amp; Streaming)</div>
+        <div style="font-size:12px;color:var(--muted)">Lokale LLM-Analyse mit Wissensdatenbank-Kontext und Echtzeit-Streaming.</div>
+        <div class="ollama-meta">
+          <div class="ometa-tag">Modell: <strong id="oMetaModel">—</strong></div>
+          <div class="ometa-tag">Ctx: <strong id="oMetaCtx">—</strong></div>
+          <div class="ometa-tag">Temp: <strong id="oMetaTemp">—</strong></div>
+          <div class="ometa-tag">KB: <strong id="oMetaKb">0 Dateien</strong></div>
+        </div>
+        <div class="ollama-btn-row">
+          <button type="button" id="ollamaBtn" class="btn ollama-analyze-btn">🦙 Ollama Analysieren</button>
+          <button type="button" id="ollamaStop" class="btn bg" style="display:none">■ Stoppen</button>
+          <button type="button" id="openSettingsOl" class="btn bg" style="font-size:11px">⚙ Einstellungen</button>
+        </div>
+        <div class="ollama-out" id="ollamaOut" style="display:none">
+          <div class="ollama-blk">
+            <div class="ollama-blk-title" style="color:var(--teal)">📈 Investor-Perspektive</div>
+            <div class="stream-out" id="oInv"></div>
+          </div>
+          <div class="ollama-blk">
+            <div class="ollama-blk-title" style="color:var(--blue)">🎯 CEO-Empfehlungen</div>
+            <div class="stream-out" id="oCeo"></div>
+          </div>
+        </div>
+        <div class="prog-wrap" id="oProgWrap" style="display:none">
+          <div class="prog-bar-bg"><div class="prog-bar" id="oProgBar"></div></div>
+          <span id="oProgTxt" style="white-space:nowrap;min-width:90px;text-align:right">Verbinde…</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="sec-title">Detailkennzahlen &amp; Nächste Schritte</div>
+        <div class="det-grid">
+          <div class="det-blk"><div class="det-blk-title">Produktivität</div><pre id="dProd">—</pre></div>
+          <div class="det-blk"><div class="det-blk-title">Finanzdetails</div><pre id="dFin">—</pre></div>
+          <div class="det-blk"><div class="det-blk-title">Nächste Schritte</div><pre id="dNext">—</pre></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div style="display:flex;gap:10px;align-items:center"><span>Version <strong>3.0</strong></span><span style="color:var(--border-b)">|</span><span>P&amp;L AI + Ollama</span></div>
+    <div>Datenschutz: Alle Daten lokal · <code>templates.json</code> · <code>knowledgebase/*.md</code></div>
+  </footer>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// POLYFILL roundRect
+// ═══════════════════════════════════════════
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){
+    const rad=Math.min(Math.abs(r||0),Math.min(Math.abs(w),Math.abs(h))/2);
+    this.beginPath();this.moveTo(x+rad,y);this.lineTo(x+w-rad,y);
+    this.quadraticCurveTo(x+w,y,x+w,y+rad);this.lineTo(x+w,y+h-rad);
+    this.quadraticCurveTo(x+w,y+h,x+w-rad,y+h);this.lineTo(x+rad,y+h);
+    this.quadraticCurveTo(x,y+h,x,y+h-rad);this.lineTo(x,y+rad);
+    this.quadraticCurveTo(x,y,x+rad,y);this.closePath();return this;
+  };
+}
+
+// ═══════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const fmt=n=>{if(n===null||n===undefined||isNaN(n))return'—';const sg=n<0?'-':'';const ab=Math.abs(Math.round(n));return sg+ab.toString().replace(/\B(?=(\d{3})+(?!\d))/g,"'")+' CHF';};
+const fmtK=n=>{if(isNaN(n))return'—';const s=n<0?'-':'';const a=Math.abs(n);if(a>=1e6)return s+(a/1e6).toFixed(1)+'M';if(a>=1e3)return s+(a/1e3).toFixed(0)+'K';return s+Math.round(a).toString();};
+const fmtB=b=>{if(!b)return'?';if(b>=1e9)return(b/1e9).toFixed(1)+'GB';if(b>=1e6)return(b/1e6).toFixed(0)+'MB';if(b>=1e3)return(b/1e3).toFixed(0)+'KB';return b+'B';};
+const pct=(v,d=1)=>{if(v===null||v===undefined||isNaN(v))return'—';return(v*100).toFixed(d)+'%';};
+const sumArr=arr=>(arr||[]).reduce((s,i)=>s+(parseFloat(i.amount)||0),0);
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let templates=[];
+let S={revenue:[],cogs:[],opex:[],other:[],taxRate:14};
+let ollamaController=null;
+
+const P_BLUE=['#4f7df3','#7b63f0','#9455f4','#22d3ee','#38bdf8','#818cf8','#a78bfa','#6366f1'];
+const P_RED=['#ef4444','#f97316','#f59e0b','#dc2626','#ea580c','#d97706','#b91c1c'];
+const P_YEL=['#f59e0b','#eab308','#fbbf24','#d97706','#ca8a04','#a16207','#84cc16'];
+
+// ═══════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════
+const SKEY='pl_ai_cfg_v3';
+const KKEY='pl_ai_kb_v3';
+const DEFS={
+  ollamaUrl:'http://localhost:11434',ollamaModel:'llama3.2',
+  ollamaCtx:4096,ollamaTemp:0.7,ollamaTopP:0.9,ollamaSeed:0,
+  ollamaSys:'Du bist ein erfahrener CFO-Berater und Finanzanalyst für Schweizer Unternehmen. Du analysierst Profit & Loss Statements präzise und gibst datengetriebene, konkrete Empfehlungen auf Deutsch. Nutze die bereitgestellte Wissensdatenbank als zusätzlichen Kontext, falls vorhanden.'
+};
+let CFG={...DEFS};
+let KB=[];
+
+function loadCfg(){
+  try{const s=localStorage.getItem(SKEY);if(s)CFG={...DEFS,...JSON.parse(s)};}catch{}
+  try{const k=localStorage.getItem(KKEY);if(k)KB=JSON.parse(k);}catch{}
+}
+function saveCfg(){
+  localStorage.setItem(SKEY,JSON.stringify(CFG));
+  localStorage.setItem(KKEY,JSON.stringify(KB));
+}
+function cfgToUI(){
+  $('cfgUrl').value=CFG.ollamaUrl;
+  $('cfgModel').value=CFG.ollamaModel;
+  $('cfgCtx').value=CFG.ollamaCtx;
+  $('cfgTemp').value=CFG.ollamaTemp;$('cfgTempVal').textContent=parseFloat(CFG.ollamaTemp).toFixed(2);
+  $('cfgTopP').value=CFG.ollamaTopP;$('cfgTopPVal').textContent=parseFloat(CFG.ollamaTopP).toFixed(2);
+  $('cfgSeed').value=CFG.ollamaSeed||0;
+  $('cfgSysPrompt').value=CFG.ollamaSys;
+  updateMeta();renderKBList();
+}
+function uiToCfg(){
+  CFG.ollamaUrl=$('cfgUrl').value.trim().replace(/\/$/,'');
+  CFG.ollamaModel=($('cfgModel').value.trim()||$('cfgModelSel').value||'llama3.2');
+  CFG.ollamaCtx=parseInt($('cfgCtx').value)||4096;
+  CFG.ollamaTemp=parseFloat($('cfgTemp').value)||0.7;
+  CFG.ollamaTopP=parseFloat($('cfgTopP').value)||0.9;
+  CFG.ollamaSeed=parseInt($('cfgSeed').value)||0;
+  CFG.ollamaSys=$('cfgSysPrompt').value.trim();
+}
+function updateMeta(){
+  $('oMetaModel').textContent=CFG.ollamaModel||'—';
+  $('oMetaCtx').textContent=CFG.ollamaCtx>=1024?(CFG.ollamaCtx/1024).toFixed(0)+'K':CFG.ollamaCtx;
+  $('oMetaTemp').textContent=parseFloat(CFG.ollamaTemp).toFixed(2);
+  $('oMetaKb').textContent=KB.length+' Datei'+(KB.length!==1?'en':'');
+}
+
+// ─── Settings panel ─────────────────────────
+function openSettings(){$('sPanel').classList.add('open');$('sOverlay').classList.add('open');cfgToUI();}
+function closeSettings(){$('sPanel').classList.remove('open');$('sOverlay').classList.remove('open');}
+$('openSettings').addEventListener('click',openSettings);
+$('openSettingsOl').addEventListener('click',openSettings);
+$('sClose').addEventListener('click',closeSettings);
+$('sOverlay').addEventListener('click',closeSettings);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSettings();});
+
+document.querySelectorAll('.stab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.stab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.s-tab-content').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    $('stab-'+t.dataset.tab).classList.add('active');
+  });
+});
+
+$('cfgTemp').addEventListener('input',()=>{$('cfgTempVal').textContent=parseFloat($('cfgTemp').value).toFixed(2);});
+$('cfgTopP').addEventListener('input',()=>{$('cfgTopPVal').textContent=parseFloat($('cfgTopP').value).toFixed(2);});
+$('cfgModelSel').addEventListener('change',()=>{if($('cfgModelSel').value)$('cfgModel').value=$('cfgModelSel').value;});
+
+$('sSave').addEventListener('click',()=>{uiToCfg();saveCfg();updateMeta();closeSettings();setStatus('Einstellungen gespeichert ✓');});
+$('sReset').addEventListener('click',()=>{if(!confirm('Einstellungen zurücksetzen?'))return;CFG={...DEFS};cfgToUI();});
+
+// ─── Test connection ─────────────────────────
+$('testConnBtn').addEventListener('click',async()=>{
+  const url=$('cfgUrl').value.trim().replace(/\/$/,'');
+  const ind=$('connInd');const txt=$('connTxt');
+  ind.className='conn-ind';txt.textContent='Teste…';
+  try{
+    const r=await fetch(`${url}/api/tags`,{signal:AbortSignal.timeout(4000)});
+    if(r.ok){ind.className='conn-ind ok';txt.textContent='Verbunden ✓';}
+    else throw new Error(r.status);
+  }catch{ind.className='conn-ind err';txt.textContent='Nicht erreichbar';}
+});
+
+// ─── Fetch models ────────────────────────────
+$('fetchModelsBtn').addEventListener('click',async()=>{
+  const url=$('cfgUrl').value.trim().replace(/\/$/,'');
+  const btn=$('fetchModelsBtn');btn.disabled=true;btn.innerHTML='<span class="spinner"></span>';
+  try{
+    const r=await fetch(`${url}/api/tags`,{signal:AbortSignal.timeout(5000)});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const data=await r.json();
+    const sel=$('cfgModelSel');sel.innerHTML='<option value="">— Modell wählen —</option>';
+    (data.models||[]).forEach(m=>{const o=document.createElement('option');o.value=m.name;o.textContent=`${m.name}  (${fmtB(m.size)})`;sel.appendChild(o);});
+    $('connInd').className='conn-ind ok';$('connTxt').textContent=(data.models?.length||0)+' Modelle';
+  }catch(e){alert('Ollama nicht erreichbar:\n'+e.message);}
+  finally{btn.disabled=false;btn.textContent='Laden';}
+});
+
+// ═══════════════════════════════════════════
+// KNOWLEDGE BASE
+// ═══════════════════════════════════════════
+function renderKBList(){
+  const list=$('kbList');$('kbCount').textContent=KB.length+' Datei'+(KB.length!==1?'en':'');
+  updateMeta();
+  if(!KB.length){list.innerHTML='<div class="kb-empty">Keine Wissensdatenbank geladen.<br>Dateien hochladen oder Auto-Laden verwenden.</div>';return;}
+  list.innerHTML=KB.map((f,i)=>`
+    <div class="kb-item">
+      <span class="kb-ico">📄</span>
+      <span class="kb-name" title="${esc(f.name)}">${esc(f.name)}</span>
+      <span class="kb-sz">${fmtB(f.content.length)}</span>
+      <button class="btn br" onclick="removeKB(${i})">✕</button>
+    </div>`).join('');
+}
+window.removeKB=function(i){KB.splice(i,1);saveCfg();renderKBList();};
+
+$('kbUpload').addEventListener('change',async e=>{
+  for(const file of Array.from(e.target.files)){
+    const content=await file.text();
+    const idx=KB.findIndex(f=>f.name===file.name);
+    if(idx>=0)KB[idx]={name:file.name,content};else KB.push({name:file.name,content});
+  }
+  saveCfg();renderKBList();setStatus(`${e.target.files.length} KB-Datei(en) geladen`);e.target.value='';
+});
+
+$('kbClear').addEventListener('click',()=>{if(!KB.length||!confirm('Wissensdatenbank leeren?'))return;KB=[];saveCfg();renderKBList();});
+
+$('kbAutoLoad').addEventListener('click',async()=>{
+  const btn=$('kbAutoLoad');btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Lade…';
+  try{
+    const ir=await fetch('./knowledgebase/index.json',{cache:'no-store'});
+    if(!ir.ok)throw new Error('knowledgebase/index.json nicht gefunden');
+    const files=await ir.json();
+    let n=0;
+    for(const fn of files){
+      try{
+        const r=await fetch(`./knowledgebase/${fn}`,{cache:'no-store'});
+        if(!r.ok)continue;
+        const content=await r.text();
+        const idx=KB.findIndex(f=>f.name===fn);
+        if(idx>=0)KB[idx]={name:fn,content};else KB.push({name:fn,content});
+        n++;
+      }catch{}
+    }
+    saveCfg();renderKBList();setStatus(`${n}/${files.length} KB-Dateien geladen`);
+  }catch(e){
+    alert('Auto-Laden fehlgeschlagen:\n'+e.message+'\n\nErstelle knowledgebase/index.json:\n["datei1.md","datei2.md"]');
+  }finally{btn.disabled=false;btn.textContent='⬇ Auto aus knowledgebase/';}
+});
+
+function buildKBCtx(){
+  if(!KB.length)return'';
+  const MAX=14000;let ctx='[WISSENSDATENBANK]\n\n';let total=0;
+  for(const f of KB){
+    const sec=`### ${f.name}\n\n${f.content}\n\n`;
+    if(total+sec.length>MAX){ctx+=`### ${f.name}\n\n${f.content.slice(0,MAX-total-100)}…\n\n`;break;}
+    ctx+=sec;total+=sec.length;
+  }
+  return ctx+'[/WISSENSDATENBANK]\n\n';
+}
+
+// ═══════════════════════════════════════════
+// RENDER LISTS
+// ═══════════════════════════════════════════
+function renderList(id,items){
+  const c=$(id);c.innerHTML='';
+  items.forEach((it,idx)=>{
+    const row=document.createElement('div');row.className='ci';
+    row.innerHTML=`<input type="text" class="n" value="${esc(it.name)}"/><input type="number" class="a" value="${it.amount}"/><button class="btn bs">✓</button><button class="btn br">✕</button>`;
+    row.querySelector('.bs').addEventListener('click',()=>{items[idx]={name:row.querySelector('.n').value.trim()||'Unnamed',amount:parseFloat(row.querySelector('.a').value)||0};renderAll();});
+    row.querySelector('.br').addEventListener('click',()=>{items.splice(idx,1);renderAll();});
+    c.appendChild(row);
+  });
+}
+function renderAll(){
+  renderList('revenueList',S.revenue);renderList('cogsList',S.cogs);
+  renderList('opexList',S.opex);renderList('otherList',S.other);
+  $('taxRate').value=S.taxRate;
+  $('revTot').textContent=fmt(sumArr(S.revenue));$('cogsTot').textContent=fmt(sumArr(S.cogs));
+  $('opexTot').textContent=fmt(sumArr(S.opex));$('otherTot').textContent=fmt(sumArr(S.other));
+}
+
+function getPreset(pid,nid){const p=$(pid).value;return p==='__c'?($(nid).value.trim()||'Eigene Kategorie'):p;}
+function wirePreset(pid,nid){const p=$(pid),n=$(nid);const upd=()=>{n.disabled=p.value!=='__c';if(!n.disabled)n.focus();};p.addEventListener('change',upd);upd();}
+function wireAdd(bid,pid,nid,aid,arr){$(bid).addEventListener('click',()=>{arr.push({name:getPreset(pid,nid),amount:parseFloat($(aid).value)||0});$(nid).value='';$(aid).value='';renderAll();});}
+wirePreset('revPreset','revName');wirePreset('cogsPreset','cogsName');wirePreset('opexPreset','opexName');wirePreset('otherPreset','otherName');
+wireAdd('addRevBtn','revPreset','revName','revAmt',S.revenue);
+wireAdd('addCogsBtn','cogsPreset','cogsName','cogsAmt',S.cogs);
+wireAdd('addOpexBtn','opexPreset','opexName','opexAmt',S.opex);
+wireAdd('addOtherBtn','otherPreset','otherName','otherAmt',S.other);
+
+// ═══════════════════════════════════════════
+// TEMPLATES
+// ═══════════════════════════════════════════
+const FALLBACK=[
+  {id:'consulting',name:'Consulting Unternehmen',revenue:[{name:'Beratung',amount:18500000},{name:'Projekte',amount:27800000},{name:'Support',amount:9200000}],cogs:[{name:'Löhne billable FTEs',amount:22400000},{name:'Externe Spezialisten',amount:6800000},{name:'Lizenzen',amount:2100000},{name:'Spesen',amount:1250000}],opex:[{name:'Löhne non-billable',amount:8900000},{name:'Marketing',amount:1450000},{name:'IT Tools',amount:1150000},{name:'Miete',amount:2300000}],other:[{name:'Abschreibungen HW',amount:850000},{name:'Abschreibungen SW',amount:450000},{name:'Zinsaufwand',amount:-180000},{name:'Zinsertrag',amount:40000}],taxRate:14},
+  {id:'saas',name:'SaaS Anbieter',revenue:[{name:'Subscription',amount:12000000},{name:'Professional Services',amount:3000000},{name:'Onboarding Fees',amount:500000}],cogs:[{name:'Hosting & Cloud',amount:1200000},{name:'Support Löhne',amount:1800000},{name:'Third-party Licenses',amount:300000}],opex:[{name:'R&D',amount:3000000},{name:'Sales & Marketing',amount:2500000},{name:'Customer Success',amount:900000}],other:[{name:'Abschreibungen SW',amount:600000},{name:'Zinsaufwand',amount:-50000}],taxRate:14},
+  {id:'onlineshop',name:'Online Shop',revenue:[{name:'Produktverkäufe',amount:35000000},{name:'Versandgebühren',amount:800000},{name:'Zubehör',amount:600000}],cogs:[{name:'Wareneinsatz',amount:22000000},{name:'Retouren',amount:500000},{name:'Verpackung',amount:1200000}],opex:[{name:'Logistik',amount:2000000},{name:'Marketing',amount:3000000},{name:'Customer Service',amount:800000}],other:[{name:'Abschreibungen',amount:400000},{name:'Zinsaufwand',amount:-120000}],taxRate:14}
+];
+async function loadTemplates(){
+  try{const r=await fetch('./templates.json',{cache:'no-store'});if(!r.ok)throw 0;templates=await r.json();}catch{templates=FALLBACK;}
+  const sel=$('templateSelect');sel.innerHTML='';
+  templates.forEach(t=>{const o=document.createElement('option');o.value=t.id;o.textContent=t.name;sel.appendChild(o);});
+  const bl=document.createElement('option');bl.value='__blank';bl.textContent='Leere Vorlage';sel.appendChild(bl);
+  setStatus('Vorlagen geladen');
+}
+$('loadTplBtn').addEventListener('click',loadTemplates);
+$('templateSelect').addEventListener('change',()=>{
+  const id=$('templateSelect').value;
+  if(id==='__blank'){S={revenue:[],cogs:[],opex:[],other:[],taxRate:14};renderAll();return;}
+  const t=templates.find(x=>x.id===id);if(!t)return;
+  ['revenue','cogs','opex','other'].forEach(k=>S[k]=JSON.parse(JSON.stringify(t[k]||[])));
+  S.taxRate=t.taxRate||14;renderAll();setStatus(`Vorlage "${t.name}" geladen`);
+});
+$('saveTplBtn').addEventListener('click',()=>{
+  const name=prompt('Vorlagenname:');if(!name)return;
+  const id=name.toLowerCase().replace(/\s+/g,'_');
+  dl(JSON.stringify({id,name,revenue:S.revenue,cogs:S.cogs,opex:S.opex,other:S.other,taxRate:S.taxRate},null,2),`${id}.json`);
+});
+
+function dl(content,filename){const b=new Blob([content],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=filename;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);}
+$('exportBtn').addEventListener('click',()=>{dl(JSON.stringify({...S,meta:{generatedAt:new Date().toISOString()}},null,2),`pl_${new Date().toISOString().slice(0,10)}.json`);setStatus('Exportiert');});
+$('importBtn').addEventListener('click',()=>{
+  const file=$('importFile').files[0];if(!file){alert('Bitte JSON-Datei wählen.');return;}
+  const r=new FileReader();r.onload=e=>{try{const d=JSON.parse(e.target.result);['revenue','cogs','opex','other'].forEach(k=>S[k]=d[k]||[]);S.taxRate=d.taxRate??14;renderAll();setStatus('Importiert');}catch{alert('Ungültiges JSON');}};r.readAsText(file);
+});
+$('resetBtn').addEventListener('click',()=>{
+  if(!confirm('Zurücksetzen?'))return;
+  const t=templates.find(x=>x.id==='consulting')||templates[0];
+  if(t){['revenue','cogs','opex','other'].forEach(k=>S[k]=JSON.parse(JSON.stringify(t[k]||[])));S.taxRate=t.taxRate||14;}
+  else S={revenue:[],cogs:[],opex:[],other:[],taxRate:14};
+  renderAll();setStatus('Zurückgesetzt');
+});
+
+function setStatus(msg){$('statusTxt').textContent=msg;}
+function setKpi(id,val,good,warn){$(id).className='kpi '+(val>=good?'good':val>=warn?'warn':'bad');}
+
+// ═══════════════════════════════════════════
+// WATERFALL CHART
+// ═══════════════════════════════════════════
+function drawWaterfall(bars){
+  const cv=$('wfCanvas');const dpr=window.devicePixelRatio||1;
+  const W=cv.parentElement.clientWidth-30;const H=195;
+  cv.width=W*dpr;cv.height=H*dpr;cv.style.width=W+'px';cv.style.height=H+'px';
+  const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
+  const P={t:20,b:44,l:8,r:8};const cW=W-P.l-P.r;const cH=H-P.t-P.b;
+  const vs=bars.map(b=>b.v);const mx=Math.max(...vs,0);const mn=Math.min(...vs,0);
+  const rng=mx-mn||1;const toY=v=>P.t+cH-((v-mn)/rng)*cH;const z0=toY(0);
+  const bW=Math.max((cW/bars.length)-7,16);const gap=(cW-bW*bars.length)/(bars.length+1);
+  ctx.strokeStyle='rgba(110,90,230,0.08)';ctx.lineWidth=1;
+  [0,.25,.5,.75,1].forEach(f=>{const y=P.t+f*cH;ctx.beginPath();ctx.moveTo(P.l,y);ctx.lineTo(W-P.r,y);ctx.stroke();});
+  ctx.strokeStyle='rgba(110,90,230,0.22)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(P.l,z0);ctx.lineTo(W-P.r,z0);ctx.stroke();
+  bars.forEach((bar,i)=>{
+    const x=P.l+gap+i*(bW+gap);const y=toY(bar.v);const h=Math.abs(y-z0);const top=bar.v>=0?y:z0;
+    const g=ctx.createLinearGradient(x,top,x,top+h);
+    if(bar.v>=0){g.addColorStop(0,bar.c1||'#4f7df3');g.addColorStop(1,bar.c2||'#9455f4');}
+    else{g.addColorStop(0,'#ef4444');g.addColorStop(1,'#b91c1c');}
+    ctx.fillStyle=g;ctx.roundRect(x,top,bW,Math.max(h,2),Math.min(3,bW/4,Math.max(h/2,.1)));ctx.fill();
+    ctx.fillStyle='#e4ecf8';ctx.font=`500 9.5px 'JetBrains Mono',monospace`;ctx.textAlign='center';
+    ctx.fillText(fmtK(bar.v),x+bW/2,bar.v>=0?top-5:top+h+11);
+    ctx.fillStyle='#6a7a9b';ctx.font=`500 9px 'Plus Jakarta Sans',sans-serif`;
+    ctx.fillText(bar.label.length>9?bar.label.slice(0,8)+'…':bar.label,x+bW/2,H-P.b+13);
+    if(bar.pct){ctx.fillStyle='#4a5c7a';ctx.font=`400 8px 'JetBrains Mono',monospace`;ctx.fillText(bar.pct,x+bW/2,H-P.b+23);}
+  });
+}
+
+// ═══════════════════════════════════════════
+// DONUT CHARTS
+// ═══════════════════════════════════════════
+function renderDonut(cid,items,palette){
+  const c=$(cid);c.innerHTML='';
+  if(!items?.length){c.innerHTML='<div style="font-size:12px;color:var(--muted)">Keine Daten</div>';return;}
+  const total=items.reduce((s,i)=>s+(parseFloat(i.amount)||0),0);
+  if(!total){c.innerHTML='<div style="font-size:12px;color:var(--muted)">Keine Daten</div>';return;}
+  const R=28,CX=36,CY=36,SZ=72,circ=2*Math.PI*R;
+  let off=0;
+  const segs=items.map((it,idx)=>{const fr=(parseFloat(it.amount)||0)/total;const dash=fr*circ;const s={off,dash,color:palette[idx%palette.length],fr,name:it.name};off+=dash;return s;});
+  const svg=`<svg viewBox="0 0 ${SZ} ${SZ}" width="${SZ}" height="${SZ}" style="flex-shrink:0"><circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="10"/>${segs.map(s=>`<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="${s.color}" stroke-width="10" stroke-dasharray="${s.dash.toFixed(2)} ${(circ-s.dash).toFixed(2)}" stroke-dashoffset="${(-s.off).toFixed(2)}" transform="rotate(-90 ${CX} ${CY})"/>`).join('')}</svg>`;
+  const wrap=document.createElement('div');wrap.style.cssText='display:flex;gap:12px;align-items:center';
+  wrap.innerHTML=svg+`<div class="donut-legend" style="flex:1">${segs.map(s=>`<div class="dl-item"><div class="dl-dot" style="background:${s.color}"></div><span class="dl-name" title="${s.name}">${s.name}</span><span class="dl-pct">${(s.fr*100).toFixed(0)}%</span></div>`).join('')}</div>`;
+  c.appendChild(wrap);
+}
+
+// ═══════════════════════════════════════════
+// P&L TABLE
+// ═══════════════════════════════════════════
+function renderPL({revenue,gross_profit,ebitda,ebit,ebt,net,fin_total,dep,tax}){
+  const rows=[];
+  const sec=l=>rows.push(`<tr class="pl-sec"><td colspan="2">${l}</td></tr>`);
+  const item=(l,v,ind)=>rows.push(`<tr${ind?' class="pl-indent"':''}><td style="padding-left:${ind?18:8}px;font-size:${ind?11:12}px">${l}</td><td style="color:${v>=0?'var(--text-d)':'var(--red)'}">${fmt(v)}</td></tr>`);
+  const tot=(l,v,cls)=>rows.push(`<tr class="pl-total ${cls||''}"><td>${l}</td><td>${fmt(v)}</td></tr>`);
+  const sp=()=>rows.push(`<tr><td colspan="2" style="height:5px"></td></tr>`);
+  sec('Umsatz');S.revenue.forEach(r=>item(r.name,r.amount,true));tot('Total Umsatz',revenue,'');sp();
+  sec('Direkte Kosten (COGS)');S.cogs.forEach(r=>item(r.name,-r.amount,true));tot('Bruttogewinn',gross_profit,gross_profit>=0?'pos':'neg');sp();
+  sec('Operative Kosten (OPEX)');S.opex.forEach(r=>item(r.name,-r.amount,true));tot('EBITDA',ebitda,ebitda>=0?'hl pos':'neg');sp();
+  sec('Abschreibungen &amp; Finanzen');S.other.forEach(r=>item(r.name,/abschreib/i.test(r.name)?-r.amount:r.amount,true));
+  tot('EBIT',ebit,ebit>=0?'pos':'neg');sp();
+  item('Finanzergebnis',fin_total,false);tot('EBT (vor Steuern)',ebt,ebt>=0?'pos':'neg');
+  item('Steuern',-tax,false);sp();tot('Nettogewinn',net,net>=0?'hl pos':'neg');
+  $('plBody').innerHTML=rows.join('');
+}
+
+// ═══════════════════════════════════════════
+// MAIN ANALYZE
+// ═══════════════════════════════════════════
+function calcPL(){
+  S.taxRate=parseFloat($('taxRate').value)||14;
+  const revenue=sumArr(S.revenue),cogs=sumArr(S.cogs),opex=sumArr(S.opex);
+  const dep=S.other.reduce((s,i)=>s+(/abschreib|depr/i.test(i.name)?parseFloat(i.amount)||0:0),0);
+  const fin=S.other.reduce((s,i)=>s+(/zins|interest/i.test(i.name)?parseFloat(i.amount)||0:0),0);
+  const misc=S.other.reduce((s,i)=>s+(!/abschreib|depr|zins|interest/i.test(i.name)?parseFloat(i.amount)||0:0),0);
+  const gp=revenue-cogs,ebitda=gp-(opex+misc),ebit=ebitda-dep,ebt=ebit+fin;
+  const tax=ebt>0?ebt*(S.taxRate/100):0,net=ebt-tax;
+  return{revenue,cogs,opex,dep,fin,gp,ebitda,ebit,ebt,tax,net,
+    gm:revenue?gp/revenue:0,em:revenue?ebitda/revenue:0,eim:revenue?ebit/revenue:0,nm:revenue?net/revenue:0,
+    cq:revenue?cogs/revenue:0,oq:revenue?opex/revenue:0};
+}
+
+function analyze(){
+  setStatus('Analysiere…');
+  const D=calcPL();
+  // KPIs
+  $('m_rev').textContent=fmt(D.revenue);$('kpi0').className='kpi neutral';
+  $('m_rev_b').textContent=S.revenue.map(r=>`${r.name} ${pct(r.amount/(D.revenue||1),0)}`).join(' · ')||'—';
+  $('m_gm').textContent=pct(D.gm,1);$('m_gp').textContent=fmt(D.gp);setKpi('kpi1',D.gm*100,50,35);
+  $('m_em').textContent=pct(D.em,1);$('m_e').textContent=fmt(D.ebitda);setKpi('kpi2',D.em*100,15,8);
+  $('m_eim').textContent=pct(D.eim,1);$('m_ei').textContent=fmt(D.ebit);setKpi('kpi3',D.eim*100,12,5);
+  $('m_nm').textContent=pct(D.nm,1);$('m_n').textContent=fmt(D.net);setKpi('kpi4',D.nm*100,10,3);
+  $('m_cq').textContent=pct(D.cq,1);$('m_oq').textContent=`OPEX ${pct(D.oq,1)}`;
+  $('kpi5').className='kpi '+(D.cq<0.5?'good':D.cq<0.7?'warn':'bad');
+  // Waterfall
+  const wBars=[
+    {label:'Umsatz',v:D.revenue,c1:'#4f7df3',c2:'#7b63f0'},
+    {label:'COGS',v:-D.cogs},{label:'Brutto',v:D.gp,c1:'#22d3ee',c2:'#06b6d4',pct:pct(D.gm,1)},
+    {label:'OPEX',v:-D.opex},{label:'EBITDA',v:D.ebitda,c1:'#22c55e',c2:'#16a34a',pct:pct(D.em,1)},
+    {label:'Abschr.',v:-D.dep},{label:'EBIT',v:D.ebit,c1:'#818cf8',c2:'#6366f1',pct:pct(D.eim,1)},
+    {label:'Finanzen',v:D.fin,c1:'#22d3ee',c2:'#0891b2'},{label:'Steuern',v:-D.tax},
+    {label:'Netto',v:D.net,c1:D.net>=0?'#22c55e':'#ef4444',c2:D.net>=0?'#16a34a':'#b91c1c',pct:pct(D.nm,1)},
+  ];
+  setTimeout(()=>drawWaterfall(wBars),50);
+  renderDonut('cogsDonut',S.cogs,P_RED);renderDonut('opexDonut',S.opex,P_YEL);
+  renderPL({revenue:D.revenue,gross_profit:D.gp,ebitda:D.ebitda,ebit:D.ebit,ebt:D.ebt,net:D.net,fin_total:D.fin,dep:D.dep,tax:D.tax});
+  // Flags
+  const flags=[];
+  if(D.gm<0.35)flags.push({r:0,t:'Niedrige Bruttomarge',d:'Bruttomarge < 35% — Einkaufspreise, Subcontractor-Kosten und Rabatte prüfen.'});
+  if(D.em<0.08)flags.push({r:0,t:'Niedrige EBITDA-Marge',d:'EBITDA < 8% — operative Effizienz und Overhead überprüfen.'});
+  if(D.oq>0.35)flags.push({r:1,t:'Hohe OPEX-Quote',d:'OPEX > 35% vom Umsatz — Backoffice-Aufwand und Marketing-Effizienz prüfen.'});
+  const sub=S.cogs.find(x=>/sub|extern|contractor/i.test(x.name));
+  if(sub&&sub.amount/(D.revenue||1)>0.15)flags.push({r:0,t:'Hoher Subcontractor-Anteil',d:'> 15% Umsatz — Konditionen verhandeln oder interne Skills aufbauen.'});
+  if(D.dep/(D.revenue||1)>0.05)flags.push({r:0,t:'Hohe Abschreibungen',d:'> 5% Umsatz — Investitionszyklen und Nutzungsdauern prüfen.'});
+  if(D.nm<0)flags.push({r:1,t:'Negatives Nettoergebnis',d:'Nettoverlust — sofortige Kostenrevision und Liquiditätssicherung empfohlen.'});
+  const fp=$('flagsPanel'),fl=$('flagsList');
+  if(flags.length){fp.style.display='block';fl.innerHTML=flags.map(f=>`<div class="flag${f.r?' fr':''}"><span class="flag-ico">${f.r?'🔴':'⚠️'}</span><div><div class="flag-title">${f.t}</div><div class="flag-desc">${f.d}</div></div></div>`).join('');}
+  else fp.style.display='none';
+  // Interpretations
+  $('investorPre').textContent=[`Kurzfazit: Umsatz ${fmt(D.revenue)} · Bruttomarge ${pct(D.gm,1)} · EBITDA-Marge ${pct(D.em,1)}.`,``,`Umsatzmix:`,...S.revenue.map(r=>`  · ${r.name}: ${fmt(r.amount)} (${Math.round((r.amount/(D.revenue||1))*100)}%)`),``,`Stärken:`,`  · Operative Profitabilität: EBITDA ${pct(D.em,1)}, Netto ${pct(D.nm,1)}.`,``,`Risiken:`,`  · ${flags.length?flags.map(f=>f.t).join(' · '):'Keine kritischen Signale erkannt.'}`,``,`Empfehlungen:`,`  · Kundenkonzentration, DSO und Vertragslaufzeiten prüfen.`,`  · Szenarioanalyse bei ±10% Umsatzabweichung.`].join('\n');
+  $('ceoPre').textContent=[`Operativ: ${fmt(D.revenue)} Umsatz · ${fmt(D.gp)} Brutto · ${fmt(D.ebitda)} EBITDA.`,``,`Kurzfristig (0–6 Monate):`,`  · COGS senken: Verhandlungen, interner Skill-Aufbau.`,`  · Projektgovernance: Scope-Control, Change-Management.`,`  · DSO optimieren: Meilenstein-Abrechnung.`,``,`Mittelfristig (6–18 Monate):`,`  · Wiederkehrende Service-Umsätze ausbauen.`,`  · Automatisierung im Controlling & Reporting.`,``,`KPI-Ziele:`,`  · Billable Ratio > 70% · Rev/FTE > 220k CHF · EBITDA > 15%`].join('\n');
+  // Details
+  const fte=D.revenue/240000,tp=D.revenue/180000;
+  $('dProd').textContent=[`Billable FTEs:  ~${Math.round(fte)}`,`Gesamt FTEs:    ~${Math.round(tp)}`,`Billable Ratio: ~${Math.round(tp?fte/tp*100:0)}%`,`Rev/FTE:        ${fmt(D.revenue/Math.max(Math.round(tp),1))}`].join('\n');
+  $('dFin').textContent=[`Abschreibungen: ${fmt(D.dep)}`,`Abschr./Umsatz: ${pct(D.dep/(D.revenue||1),2)}`,`Finanzergebnis: ${fmt(D.fin)}`,`Steueraufwand:  ${fmt(D.tax)}`,`Steuersatz:     ${S.taxRate}%`].join('\n');
+  $('dNext').textContent=[`· Kunden-Profitabilitätsanalyse`,`· Cashflow & Working Capital`,`· DSO, DPO, DIO Analyse`,`· Szenario-Modellierung`,`· Headcount-Planung FY+1`].join('\n');
+  setStatus('Analyse abgeschlossen ✓');
+}
+$('analyzeBtn').addEventListener('click',analyze);
+
+// ═══════════════════════════════════════════
+// CLAUDE AI
+// ═══════════════════════════════════════════
+$('aiBtn').addEventListener('click',async()=>{
+  const key=$('aiKey').value.trim();if(!key){alert('Bitte Anthropic API Key eingeben.');return;}
+  const btn=$('aiBtn');btn.disabled=true;btn.innerHTML='<span class="spinner"></span>&nbsp;Analysiere…';
+  const D=calcPL();
+  const plData={currency:'CHF',revenue_total:D.revenue,revenue_breakdown:S.revenue,cogs_total:D.cogs,cogs_breakdown:S.cogs,opex_total:D.opex,opex_breakdown:S.opex,gross_profit:D.gp,gross_margin_pct:(D.gm*100).toFixed(1),ebitda:D.ebitda,ebitda_margin_pct:(D.em*100).toFixed(1),ebit:D.ebit,net_profit:D.net,net_margin_pct:(D.nm*100).toFixed(1),depreciation:D.dep,tax_rate:S.taxRate};
+  const prompt=`Analysiere diese P&L (CHF) auf Deutsch. Gib EXAKT dieses JSON zurück (keine Backticks):\n{"investor":"6-8 Sätze Investor-Analyse mit Kennzahlen und Empfehlungen","ceo":"6-8 Sätze CEO-Massnahmen mit KPI-Zielen"}\n\nDaten:\n${JSON.stringify(plData,null,2)}`;
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    if(!r.ok){const e=await r.json();throw new Error(e.error?.message||r.statusText);}
+    const data=await r.json();const txt=data.content.map(c=>c.text||'').join('');
+    let p;try{p=JSON.parse(txt.replace(/```json|```/g,'').trim());}catch{p={investor:txt,ceo:''};}
+    $('aiInv').textContent=p.investor||txt;$('aiCeo').textContent=p.ceo||'—';
+    $('aiOut').style.display='grid';setStatus('Claude-Analyse ✓');
+  }catch(e){alert('Claude Fehler: '+e.message);}
+  finally{btn.disabled=false;btn.innerHTML='Claude Analysieren';}
+});
+
+// ═══════════════════════════════════════════
+// OLLAMA — STREAMING
+// ═══════════════════════════════════════════
+function parseSections(txt){
+  const im=txt.match(/##\s*INVESTOR[\-\s]*PERSPEKTIVE\s*([\s\S]*?)(?=##\s*CEO|$)/i);
+  const cm=txt.match(/##\s*CEO[\-\s]*EMPFEHLUNGEN?\s*([\s\S]*?)$/i);
+  return{inv:(im?.[1]||'').trim(),ceo:(cm?.[1]||'').trim()};
+}
+
+$('ollamaBtn').addEventListener('click',async()=>{
+  const model=CFG.ollamaModel;
+  if(!model){alert('Bitte zuerst ein Modell in ⚙ Einstellungen konfigurieren.');return;}
+  const btn=$('ollamaBtn'),stop=$('ollamaStop');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>&nbsp;Generiere…';
+  stop.style.display='inline-flex';
+  $('ollamaOut').style.display='grid';$('oProgWrap').style.display='flex';
+  $('oInv').textContent='';$('oCeo').textContent='';
+  $('oProgBar').style.width='5%';$('oProgTxt').textContent='Verbinde…';
+
+  const D=calcPL();
+  const kbCtx=buildKBCtx();
+  const plTxt=`P&L Daten (CHF, Steuersatz ${S.taxRate}%):
+Umsatz total:     ${fmt(D.revenue)}
+  ${S.revenue.map(r=>`${r.name}: ${fmt(r.amount)}`).join('\n  ')}
+COGS total:       ${fmt(D.cogs)}
+  ${S.cogs.map(r=>`${r.name}: ${fmt(r.amount)}`).join('\n  ')}
+Bruttogewinn:     ${fmt(D.gp)} (${pct(D.gm,1)})
+OPEX total:       ${fmt(D.opex)}
+  ${S.opex.map(r=>`${r.name}: ${fmt(r.amount)}`).join('\n  ')}
+EBITDA:           ${fmt(D.ebitda)} (${pct(D.em,1)})
+Abschreibungen:   ${fmt(D.dep)}
+EBIT:             ${fmt(D.ebit)} (${pct(D.eim,1)})
+Finanzergebnis:   ${fmt(D.fin)}
+EBT:              ${fmt(D.ebt)}
+Steuern:          ${fmt(D.tax)}
+Nettogewinn:      ${fmt(D.net)} (${pct(D.nm,1)})`;
+
+  const sysPrm=CFG.ollamaSys+(kbCtx?'\n\n'+kbCtx:'');
+  const userPrm=`${plTxt}
+
+Analysiere diese P&L auf Deutsch. Antworte EXAKT in diesem Format (beide Abschnitte vollständig):
+
+## INVESTOR-PERSPEKTIVE
+[8-10 Sätze: Kennzahlen konkret benennen, Stärken bewerten, Risiken identifizieren, Investitionspotenzial einschätzen, klare Handlungsempfehlungen]
+
+## CEO-EMPFEHLUNGEN
+[8-10 Sätze: Quick-Wins 0-6 Monate, strategische Prioritäten 6-18 Monate, konkrete KPI-Zielwerte mit Zahlen, Massnahmen zur Margenverbesserung]`;
+
+  ollamaController=new AbortController();
+  stop.onclick=()=>ollamaController?.abort();
+  let full='',tokens=0,done=false;
+
+  try{
+    const resp=await fetch(`${CFG.ollamaUrl}/api/chat`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      signal:ollamaController.signal,
+      body:JSON.stringify({model,stream:true,messages:[{role:'system',content:sysPrm},{role:'user',content:userPrm}],options:{num_ctx:CFG.ollamaCtx,temperature:CFG.ollamaTemp,top_p:CFG.ollamaTopP,seed:CFG.ollamaSeed||0}})
+    });
+    if(!resp.ok){const et=await resp.text();throw new Error(`HTTP ${resp.status}: ${et.slice(0,300)}`);}
+
+    const reader=resp.body.getReader();const dec=new TextDecoder();
+    $('oProgTxt').textContent='Generiere…';
+    let buf='';
+
+    while(!done){
+      const{value,done:d}=await reader.read();
+      if(d)break;
+      buf+=dec.decode(value,{stream:true});
+      const lines=buf.split('\n');buf=lines.pop()||'';
+      for(const line of lines){
+        if(!line.trim())continue;
+        try{
+          const j=JSON.parse(line);
+          const tok=j.message?.content||'';
+          if(tok){full+=tok;tokens++;}
+          if(j.done){done=true;break;}
+        }catch{}
+      }
+      // Live update
+      const{inv,ceo}=parseSections(full);
+      const inInv=full.toLowerCase().includes('ceo');
+      $('oInv').innerHTML=esc(inv||full)+(inInv?'':'<span class="cursor"></span>');
+      $('oCeo').innerHTML=esc(ceo)+(ceo&&!done?'<span class="cursor"></span>':'');
+      $('oProgTxt').textContent=tokens+' Token';
+      $('oProgBar').style.width=Math.min(10+tokens/5,95)+'%';
+    }
+
+    // Final
+    const{inv,ceo}=parseSections(full);
+    $('oInv').textContent=inv||full||'Keine Antwort erhalten.';
+    $('oCeo').textContent=ceo||'—';
+    $('oProgBar').style.width='100%';
+    $('oProgTxt').textContent=`Fertig · ${tokens} Token`;
+    setStatus(`Ollama ✓ — ${tokens} Token`);
+
+  }catch(e){
+    if(e.name==='AbortError'){
+      setStatus('Ollama gestoppt');$('oProgTxt').textContent='Gestoppt';
+      const{inv,ceo}=parseSections(full);
+      if(inv||ceo){$('oInv').textContent=inv||full;$('oCeo').textContent=ceo||'—';}
+    }else{
+      const hint=`\n\nHinweise:\n· Ollama starten: OLLAMA_ORIGINS=* ollama serve\n· Modell laden: ollama pull ${model}\n· URL prüfen: ${CFG.ollamaUrl}`;
+      $('oInv').textContent='Fehler: '+e.message+hint;$('oCeo').textContent='—';
+      $('oProgBar').style.width='0%';$('oProgTxt').textContent='Fehler';
+      setStatus('Ollama-Fehler');console.error('Ollama error:',e);
+    }
+  }finally{
+    btn.disabled=false;btn.innerHTML='🦙 Ollama Analysieren';
+    stop.style.display='none';ollamaController=null;
+  }
+});
+
+// ═══════════════════════════════════════════
+// RESIZE
+// ═══════════════════════════════════════════
+let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{if($('m_rev').textContent!=='—')analyze();},220);});
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+window.addEventListener('load',async()=>{
+  loadCfg();
+  await loadTemplates();
+  const t=templates.find(x=>x.id==='consulting')||templates[0];
+  if(t){['revenue','cogs','opex','other'].forEach(k=>S[k]=JSON.parse(JSON.stringify(t[k]||[])));S.taxRate=t.taxRate||14;}
+  renderAll();updateMeta();renderKBList();
+  setTimeout(analyze,350);
+});
+</script>
+</body>
+</html>

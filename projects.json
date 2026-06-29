@@ -1,0 +1,165 @@
+{
+  "categories": [
+    { "id": "all",   "label": "All" },
+    { "id": "ki",    "label": "AI" },
+    { "id": "saas",  "label": "SaaS" },
+    { "id": "tools", "label": "Tools" },
+    { "id": "web",   "label": "Platforms" },
+    { "id": "games",   "label": "Games" },
+    { "id": "misc",   "label": "Miscellaneous" }
+  ],
+  "projects": [
+    {
+      "name": "AILEAN",
+      "slug": "ailean",
+      "category": "ki",
+      "desc": "Local JARVIS-style AI assistant with speech visualizer, knowledge base, and HUD interface.",
+      "tags": ["FastAPI", "Ollama", "ChromaDB", "Alpine.js"],
+      "public": false
+    },
+    {
+      "name": "AI Computer",
+      "slug": "ai-computer",
+      "category": "ki",
+      "desc": "Multi-agent platform with independent digital workers for automated tasks.",
+      "tags": ["LangGraph", "LangChain", "ChromaDB", "Streamlit"],
+      "public": false
+    },
+    {
+      "name": "KIA",
+      "slug": "kia",
+      "category": "ki",
+      "desc": "Local orchestration platform for AI agents with RAG pipeline and workflow editor.",
+      "tags": ["Ollama", "RAG", "LangGraph"],
+      "public": false
+    },
+    {
+      "name": "Kognitiv",
+      "slug": "kognia",
+      "category": "games",
+      "desc": "Modular learning and puzzle platform with its own game module system and AI fallback.",
+      "tags": ["IndexedDB", "Ollama", "JSON-Modules"],
+      "public": false
+    },
+    {
+      "name": "PULSE",
+      "slug": "pulse",
+      "category": "saas",
+      "desc": "Swiss AI operations platform with live dashboard, CRM, and integrated AI chat.",
+      "tags": ["Dashboard", "AI Chat", "CRM"],
+      "public": false
+    },
+    {
+      "name": "VANTAGE",
+      "slug": "vantage",
+      "category": "saas",
+      "desc": "B2B sales & marketing dashboard with tender scraper and stakeholder graph.",
+      "tags": ["Tailwind", "Chart.js", "RFP Analysis"],
+      "public": false
+    },
+    {
+      "name": "Brand",
+      "slug": "brand",
+      "category": "saas",
+      "desc": "Brand operating system with social media planner, voice guard, and guideline generator.",
+      "tags": ["Brand Guidelines", "Ollama", "Scheduler"],
+      "public": false
+    },
+    {
+      "name": "DAIRECTOR",
+      "slug": "dairector",
+      "category": "saas",
+      "desc": "B2B management dashboard with contextual AI personas and guided onboarding.",
+      "tags": ["AI Personas", "Onboarding"],
+      "public": false
+    },
+    {
+      "name": "Hosting Hub",
+      "slug": "hosthub",
+      "category": "saas",
+      "desc": "AI-powered hosting dashboard with human-in-the-loop confirmation flows.",
+      "tags": ["Ollama", "HITL", "Dashboard"],
+      "public": false
+    },
+    {
+      "name": "HR-Hub",
+      "slug": "hrhub",
+      "category": "saas",
+      "desc": "Centralized HR management dashboard for personnel and organizational tasks.",
+      "tags": ["HR", "Dashboard", "Admin"],
+      "public": false
+    },
+    {
+      "name": "P&L Analyzer",
+      "slug": "pnl-analyzer",
+      "category": "tools",
+      "desc": "Financial analysis tool with Ollama streaming and knowledge base from your own documents.",
+      "tags": ["Ollama", "Streaming", "Finance"],
+      "public": true
+    },
+    {
+      "name": "AI Chat WebGUI",
+      "slug": "ollama-chat-webgui",
+      "category": "tools",
+      "desc": "Full-featured chat interface with eight settings sections and full API support.",
+      "tags": ["Ollama", "Chat-UI"],
+      "public": false
+    },
+    {
+      "name": "Dev Dashboard",
+      "slug": "devdahsboard",
+      "category": "tools",
+      "desc": "Developer dashboard with live system metrics and canvas sparklines.",
+      "tags": ["FastAPI", "Vanilla JS", "Metrics"],
+      "public": false
+    },
+    {
+      "name": "Abalone",
+      "slug": "abalone",
+      "category": "games",
+      "desc": "Browser-based version of the strategy game Abalone, fully client-side.",
+      "tags": ["Canvas", "Game Logic"],
+      "public": true
+    },
+    {
+      "name": "Competitor Monitor",
+      "slug": "competitor-monitor",
+      "category": "tools",
+      "desc": "Real-time monitoring tool for competitor analysis and feature tracking.",
+      "tags": ["Monitoring", "Analytics"],
+      "public": false
+    },
+    {
+      "name": "AI Content Creator",
+      "slug": "ai-content-creator",
+      "category": "tools",
+      "desc": "Editor suite for AI-powered content generation with workflow tracking.",
+      "tags": ["Content", "Editor", "AI"],
+      "public": false
+    },
+    {
+      "name": "Modulas",
+      "slug": "modulas",
+      "category": "web",
+      "desc": "Enterprise framework with its own ORM, RBAC, and module system.",
+      "tags": ["Python", "PostgreSQL", "ORM"],
+      "public": false
+    },
+    {
+      "name": "Recruit System",
+      "slug": "recruitos",
+      "category": "web",
+      "desc": "Swiss recruiting platform with GAV salary calculator and anonymised candidate pools.",
+      "tags": ["Recruiting", "GAV", "Multi-Role"],
+      "public": false
+    },
+    {
+      "name": "AI BlogPress",
+      "slug": "ai-blogpress",
+      "category": "web",
+      "desc": "Integrated blog editor with live chat panel and AI assistance.",
+      "tags": ["Blog", "Editor", "Chat"],
+      "public": false
+    }
+  ]
+}
