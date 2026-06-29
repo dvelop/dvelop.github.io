@@ -95,7 +95,7 @@
       "category": "tools",
       "desc": "Financial analysis tool with Ollama streaming and knowledge base from your own documents.",
       "tags": ["Ollama", "Streaming", "Finance"],
-      "public": true
+      "public": false
     },
     {
       "name": "AI Chat WebGUI",
