@@ -1,265 +1,245 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Snippetly - API Setup</title>
-    <style>
-        :root {
-            --neon-blue: #00f3ff;
-            --neon-purple: #bc13fe;
-            --glass-bg: rgba(255, 255, 255, 0.05);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --text-main: #ffffff;
-            --text-muted: #a0a0a0;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Snippetly - API Setup</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><defs><linearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22><stop offset=%220%22 stop-color=%22%234A5FFF%22/><stop offset=%221%22 stop-color=%22%239B59F6%22/></defs><rect width=%22100%22 height=%22100%22 rx=%2224%22 fill=%22url(%23g)%22/><text x=%2250%22 y=%2266%22 font-size=%2254%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22monospace%22>&lt;/&gt;</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --c-blue:#4A5FFF;
+  --c-purple:#9B59F6;
+  --c-gradient: linear-gradient(135deg, var(--c-blue) 0%, var(--c-purple) 100%);
+  --c-ink:#14162B;
+  --c-bg:#F5F6FB;
+  --c-surface:#FFFFFF;
+  --c-muted:#767A94;
+  --c-muted-2:#A6A9C0;
+  --c-border:#E5E7F3;
+  --c-danger:#EF4444;
+  --c-success:#20C071;
+  --font-display:'Sora', sans-serif;
+  --font-body:'Inter', sans-serif;
+  --font-mono:'JetBrains Mono', monospace;
+  --radius-s:10px;
+  --radius-m:16px;
+  --radius-l:22px;
+  --shadow-sm: 0 1px 2px rgba(20,22,43,.04), 0 1px 1px rgba(20,22,43,.03);
+  --shadow-md: 0 10px 30px -12px rgba(20,22,43,.18);
+  --shadow-lg: 0 20px 50px -18px rgba(74,95,255,.28);
+}
+[data-theme="dark"]{
+  --c-ink:#F2F3FA;
+  --c-bg:#0E0F1C;
+  --c-surface:#181A2E;
+  --c-muted:#9497B3;
+  --c-muted-2:#5D6083;
+  --c-border:#2A2C46;
+  --shadow-md: 0 10px 30px -12px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:var(--font-body);
+  background:var(--c-bg);
+  color:var(--c-ink);
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+  transition:background .25s ease, color .25s ease;
+}
+/* Force Dark Theme for the setup page to match the neon vibe */
+body {
+    --c-ink:#F2F3FA;
+    --c-bg:#0E0F1C;
+    --c-surface:#181A2E;
+    --c-muted:#9497B3;
+    --c-muted-2:#5D6083;
+    --c-border:#2A2C46;
+    --shadow-md: 0 10px 30px -12px rgba(0,0,0,.5);
+}
 
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: #0a0a0a;
-            background-image: 
-                radial-gradient(circle at 15% 50%, rgba(188, 19, 254, 0.15), transparent 25%),
-                radial-gradient(circle at 85% 30%, rgba(0, 243, 255, 0.15), transparent 25%);
-            color: var(--text-main);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
+button{font-family:inherit;}
+h1,h2,h3,h4{font-family:var(--font-display); margin:0;}
+p{margin:0;}
+::selection{background:rgba(74,95,255,.22);}
+:focus-visible{outline:2px solid var(--c-blue); outline-offset:2px; border-radius:6px;}
 
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            text-align: center;
-            z-index: 1;
-        }
+.hidden{display:none !important;}
+svg{display:block;}
 
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 2rem;
-            background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+/* ============ ONBOARDING ============ */
+#onboarding{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:32px 20px;
+  position:relative;
+  overflow:hidden;
+  background:
+    radial-gradient(60% 50% at 15% 10%, rgba(74,95,255,.14), transparent 60%),
+    radial-gradient(50% 45% at 90% 85%, rgba(155,89,246,.16), transparent 60%),
+    var(--c-bg);
+}
+.ob-wrap{max-width:860px; width:100%; text-align:center;}
+.ob-logo{
+  width:64px; height:64px; border-radius:18px; margin:0 auto 22px;
+  background:var(--c-gradient); display:flex; align-items:center; justify-content:center;
+  box-shadow:var(--shadow-lg);
+  font-family:var(--font-mono); color:#fff; font-weight:600; font-size:22px;
+}
+.ob-wrap h1{font-size:clamp(30px,5vw,44px); line-height:1.08; letter-spacing:-.02em; margin-bottom:42px;}
+.ob-wrap h1 span{background:var(--c-gradient); -webkit-background-clip:text; background-clip:text; color:transparent;}
+.ob-cards{display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:18px; text-align:left;}
 
-        .pricing-grid {
-            display: flex;
-            gap: 2rem;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
+.ob-card{
+  background:var(--c-surface); border:1px solid var(--c-border); border-radius:var(--radius-l);
+  padding:26px 24px; position:relative; cursor:pointer;
+  transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  display:flex; flex-direction:column; gap:14px; min-height:220px;
+}
+.ob-card:hover{transform:translateY(-4px); box-shadow:var(--shadow-md); border-color:transparent;}
+.ob-card:active{transform:translateY(-1px);}
+.ob-card.disabled{cursor:not-allowed; opacity:.55;}
+.ob-card.disabled:hover{transform:none; box-shadow:none; border-color:var(--c-border);}
+.ob-icon{
+  width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+  background:var(--c-gradient); color:#fff;
+}
+.ob-card.disabled .ob-icon{background:var(--c-muted-2);}
+.ob-card h3{font-size:19px; margin-bottom:4px;}
+.ob-card p{color:var(--c-muted); font-size:14px; line-height:1.5;}
+.ob-tag{
+  position:absolute; top:20px; right:20px; font-size:11px; font-weight:700; letter-spacing:.04em;
+  text-transform:uppercase; padding:5px 10px; border-radius:999px;
+}
+.ob-tag.live{background:rgba(32,192,113,.12); color:var(--c-success);}
+.ob-tag.soon{background:rgba(118,122,148,.14); color:var(--c-muted);}
+.ob-cta{
+  margin-top:auto; font-size:14px; font-weight:600; color:var(--c-blue); display:flex; align-items:center; gap:6px;
+}
+.ob-card.disabled .ob-cta{color:var(--c-muted-2);}
 
-        .card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 2rem;
-            width: 280px;
-            text-align: left;
-            transition: transform 0.3s ease, border-color 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
+/* ============ STATUS BOX ============ */
+#status-box {
+    margin-top: 34px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--c-muted);
+    line-height: 1.55;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius-m);
+    padding: 18px 22px;
+    border: 1px dashed var(--c-border);
+    text-align: left;
+    min-height: 80px;
+}
 
-        .card:hover:not(.disabled) {
-            transform: translateY(-5px);
-            border-color: var(--neon-blue);
-        }
+/* ============ BUTTONS ============ */
+.btn{
+  border:1px solid var(--c-border); background:var(--c-surface); color:var(--c-ink); border-radius:999px;
+  padding:9px 16px; font-size:13.5px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  transition:border-color .15s ease, background .15s ease, transform .1s ease;
+}
+.btn:hover{border-color:var(--c-blue); color:var(--c-blue);}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:var(--c-gradient); color:#fff; border:none; box-shadow:0 8px 20px -10px rgba(74,95,255,.55);}
+.btn-primary:hover{color:#fff; opacity:.94;}
 
-        .card.disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            filter: grayscale(100%);
-        }
-
-        .card h2 {
-            margin-top: 0;
-            font-size: 1.8rem;
-        }
-
-        .card p {
-            color: var(--text-muted);
-            line-height: 1.5;
-        }
-
-        .btn {
-            display: inline-block;
-            width: 100%;
-            padding: 12px 0;
-            margin-top: 1.5rem;
-            border: none;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.3s, box-shadow 0.3s;
-            text-align: center;
-        }
-
-        .btn.active {
-            background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
-            box-shadow: 0 0 15px rgba(188, 19, 254, 0.4);
-        }
-
-        .btn:hover:not(:disabled) {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .btn:disabled {
-            cursor: not-allowed;
-        }
-
-        .badge {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            background: var(--neon-purple);
-            font-size: 0.7rem;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-weight: bold;
-        }
-
-        /* Modal Styles */
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(5px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-        }
-
-        .modal-overlay.active {
-            display: flex;
-        }
-
-        .modal {
-            background: #111;
-            border: 1px solid var(--neon-purple);
-            border-radius: 12px;
-            padding: 2rem;
-            width: 90%;
-            max-width: 400px;
-            box-shadow: 0 0 30px rgba(188, 19, 254, 0.2);
-        }
-
-        .modal h3 {
-            margin-top: 0;
-        }
-
-        .input-group {
-            margin: 1.5rem 0;
-        }
-
-        .input-group input {
-            width: 90%;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--glass-border);
-            border-radius: 6px;
-            color: #fff;
-            font-size: 1rem;
-        }
-
-        .input-group input:focus {
-            outline: none;
-            border-color: var(--neon-blue);
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 1rem;
-            justify-content: flex-end;
-        }
-
-        .btn-small {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .btn-cancel {
-            background: transparent;
-            color: var(--text-muted);
-        }
-        
-        .btn-cancel:hover { color: #fff; }
-
-        .btn-save {
-            background: var(--neon-purple);
-            color: #fff;
-        }
-
-        /* Status Output */
-        #status-box {
-            margin-top: 2rem;
-            padding: 1rem;
-            border-radius: 8px;
-            background: var(--glass-bg);
-            border: 1px dashed var(--glass-border);
-            min-height: 50px;
-            width: 100%;
-            box-sizing: border-box;
-            font-family: monospace;
-            text-align: left;
-        }
-    </style>
+/* ============ MODAL ============ */
+.modal-overlay{
+  position:fixed; inset:0; background:rgba(14,15,28,.7); backdrop-filter:blur(4px); z-index:100;
+  display:flex; align-items:flex-end; justify-content:center; opacity:0; pointer-events:none; transition:opacity .2s ease;
+}
+.modal-overlay.open{opacity:1; pointer-events:auto;}
+@media (min-width:640px){ .modal-overlay{align-items:center;} }
+.modal{
+  background:var(--c-surface); width:100%; max-width:440px; border-radius:22px 22px 0 0; padding:24px 22px calc(22px + env(safe-area-inset-bottom));
+  max-height:88vh; overflow-y:auto; transform:translateY(24px); transition:transform .22s ease;
+  box-shadow:var(--shadow-md);
+  border: 1px solid var(--c-border);
+}
+@media (min-width:640px){ .modal{border-radius:var(--radius-l); transform:translateY(10px);} }
+.modal-overlay.open .modal{transform:translateY(0);}
+.modal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;}
+.modal-head h3{font-size:18px;}
+.modal label{display:block; font-size:12.5px; font-weight:600; color:var(--c-muted); margin:14px 0 6px;}
+.modal input[type=text]{
+  width:100%; padding:12px 14px; border-radius:var(--radius-s); border:1px solid var(--c-border);
+  background:var(--c-bg); color:var(--c-ink); font-family:inherit; font-size:14.5px;
+}
+.modal input:focus{border-color:var(--c-blue); background:var(--c-surface); outline: none;}
+.modal-actions{display:flex; gap:10px; margin-top:24px;}
+.modal-actions .btn{flex:1;}
+</style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>Wähle dein Setup</h1>
-        
-        <div class="pricing-grid">
-            <!-- FREE TIER -->
-            <div class="card" id="card-free">
-                <h2>Free</h2>
-                <p>100% lokal im Browser. Keine Server, keine Tokens nötig. Perfekt für den Start.</p>
-                <button class="btn" id="btn-free" onclick="selectTier('free')">Aktivieren</button>
+    <!-- ============ ONBOARDING SETUP ============ -->
+    <div id="onboarding">
+        <div class="ob-wrap">
+            <div class="ob-logo">&lt;/&gt;</div>
+            <h1>Wähle dein <span>Setup</span></h1>
+            
+            <div class="ob-cards">
+                <!-- FREE TIER -->
+                <div class="ob-card" id="card-free" onclick="selectTier('free')">
+                    <div class="ob-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
+                    </div>
+                    <h3>Free</h3>
+                    <p>100% lokal im Browser. Keine Server, keine Tokens nötig. Perfekt für den Start.</p>
+                    <div class="ob-cta" id="btn-free">Aktivieren
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </div>
+                </div>
+
+                <!-- PRO TIER -->
+                <div class="ob-card" id="card-pro" onclick="selectTier('pro')">
+                    <div class="ob-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+                    </div>
+                    <h3>Pro</h3>
+                    <p>Nutzt unseren Proxy (Vercel/Netlify) für erweiterte API-Calls (z.B. Notion API). Token benötigt.</p>
+                    <div class="ob-cta" id="btn-pro">Aktivieren
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </div>
+                </div>
+
+                <!-- CLOUD TIER -->
+                <div class="ob-card disabled">
+                    <span class="ob-tag soon">Coming Soon</span>
+                    <div class="ob-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10Z"/></svg>
+                    </div>
+                    <h3>Cloud</h3>
+                    <p>Vollständig gemanagte Lösung mit eigenen Datenbanken und Analytics.</p>
+                    <div class="ob-cta">Demnächst verfügbar</div>
+                </div>
             </div>
 
-            <!-- PRO TIER -->
-            <div class="card" id="card-pro">
-                <h2>Pro</h2>
-                <p>Nutzt unseren Proxy (Vercel/Netlify) für erweiterte API-Calls (z.B. Notion API). Token benötigt.</p>
-                <button class="btn" id="btn-pro" onclick="selectTier('pro')">Aktivieren</button>
-            </div>
-
-            <!-- CLOUD TIER -->
-            <div class="card disabled">
-                <span class="badge">Coming Soon</span>
-                <h2>Cloud</h2>
-                <p>Vollständig gemanagte Lösung mit eigenen Datenbanken und Analytics.</p>
-                <button class="btn" disabled>Demnächst verfügbar</button>
-            </div>
+            <div id="status-box">> Status: Wähle einen Plan...</div>
         </div>
-
-        <div id="status-box">Status: Wähle einen Plan...</div>
     </div>
 
-    <!-- Token Modal für PRO -->
+    <!-- ============ TOKEN MODAL ============ -->
     <div class="modal-overlay" id="token-modal">
         <div class="modal">
-            <h3>Pro Token erforderlich</h3>
-            <p style="color: #a0a0a0; font-size: 0.9rem;">Bitte gib deinen Zugangstoken ein, um den Proxy-Service zu nutzen.</p>
-            <div class="input-group">
-                <input type="text" id="pro-token" placeholder="z.B. snp_abc123..." autocomplete="off">
+            <div class="modal-head">
+                <h3>Pro Token erforderlich</h3>
             </div>
+            <p style="color: var(--c-muted); font-size: 13.5px; line-height: 1.5;">Bitte gib deinen Zugangstoken ein, um den Proxy-Service zu nutzen.</p>
+            
+            <label for="pro-token" style="margin-top: 18px;">Zugangstoken</label>
+            <input type="text" id="pro-token" placeholder="z.B. snp_abc123..." autocomplete="off">
+            
             <div class="modal-actions">
-                <button class="btn-small btn-cancel" onclick="closeModal()">Abbrechen</button>
-                <button class="btn-small btn-save" onclick="saveTokenAndActivate()">Speichern & Aktivieren</button>
+                <button class="btn" onclick="closeModal()">Abbrechen</button>
+                <button class="btn btn-primary" onclick="saveTokenAndActivate()">Speichern & Aktivieren</button>
             </div>
         </div>
     </div>
@@ -269,12 +249,10 @@
         // ⚙️ KONFIGURATION
         // ==========================================
         const CONFIG = {
-            // URL für Vercel Proxy (passe den generierten Namen an, z.B. snippetly-daniel.vercel.app)
+            // URL für Vercel Proxy
             PROXY_VERCEL_URL: "https://snippetly-olelq2u7a-vlc4.vercel.app/api/notion",
-            
-            // URL für Netlify Proxy (passe den generierten Namen an)
+            // URL für Netlify Proxy
             PROXY_NETLIFY_URL: "https://DEIN-NETLIFY-PROJEKTNAME.netlify.app/api/notion",
-            
             // Welcher Proxy soll aktiv genutzt werden? ('vercel' oder 'netlify')
             ACTIVE_PROXY: "vercel" 
         };
@@ -297,7 +275,8 @@
                 executeAction('free');
             } else if (tier === 'pro') {
                 if (!userToken) {
-                    modal.classList.add('active');
+                    modal.classList.add('open');
+                    setTimeout(() => tokenInput.focus(), 100);
                 } else {
                     currentTier = 'pro';
                     updateUI();
@@ -307,7 +286,7 @@
         }
 
         function closeModal() {
-            modal.classList.remove('active');
+            modal.classList.remove('open');
             tokenInput.value = '';
         }
 
@@ -326,17 +305,19 @@
         }
 
         function updateUI() {
-            document.getElementById('btn-free').classList.remove('active');
-            document.getElementById('btn-pro').classList.remove('active');
+            // Reset Styles
+            document.getElementById('card-free').style.borderColor = 'var(--c-border)';
+            document.getElementById('card-pro').style.borderColor = 'var(--c-border)';
+            document.getElementById('btn-free').innerHTML = 'Aktivieren <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+            document.getElementById('btn-pro').innerHTML = 'Aktivieren <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
             
+            // Set Active State
             if (currentTier === 'free') {
-                document.getElementById('btn-free').classList.add('active');
-                document.getElementById('btn-free').innerText = 'Aktiviert';
-                document.getElementById('btn-pro').innerText = 'Aktivieren';
+                document.getElementById('card-free').style.borderColor = 'var(--c-blue)';
+                document.getElementById('btn-free').innerText = 'Aktiviert ✓';
             } else if (currentTier === 'pro') {
-                document.getElementById('btn-pro').classList.add('active');
-                document.getElementById('btn-pro').innerText = 'Aktiviert';
-                document.getElementById('btn-free').innerText = 'Aktivieren';
+                document.getElementById('card-pro').style.borderColor = 'var(--c-blue)';
+                document.getElementById('btn-pro').innerText = 'Aktiviert ✓';
             }
         }
 
@@ -364,12 +345,12 @@
                     
                     const data = await response.json();
                     if(response.ok) {
-                        statusBox.innerHTML += `<br><br>> <span style="color:#00f3ff">Erfolg:</span> ${JSON.stringify(data)}`;
+                        statusBox.innerHTML += `<br><br>> <span style="color:var(--c-success)">Erfolg:</span> ${JSON.stringify(data)}`;
                     } else {
-                        statusBox.innerHTML += `<br><br>> <span style="color:#ff4444">Fehler:</span> ${data.error || 'Unauthorized'}`;
+                        statusBox.innerHTML += `<br><br>> <span style="color:var(--c-danger)">Fehler:</span> ${data.error || 'Unauthorized'}`;
                     }
                 } catch (error) {
-                    statusBox.innerHTML += `<br><br>> <span style="color:#ff4444">Netzwerkfehler:</span> Proxy nicht erreichbar (${error.message}). Stelle sicher, dass Vercel/Netlify deployed ist.`;
+                    statusBox.innerHTML += `<br><br>> <span style="color:var(--c-danger)">Netzwerkfehler:</span> Proxy nicht erreichbar (${error.message}). Stelle sicher, dass Vercel/Netlify deployed ist.`;
                 }
             }
         }
