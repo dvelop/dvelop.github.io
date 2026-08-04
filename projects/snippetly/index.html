@@ -1,1 +1,383 @@
-index.html
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snippetly - API Setup</title>
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-purple: #bc13fe;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0a0a0a;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(188, 19, 254, 0.15), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(0, 243, 255, 0.15), transparent 25%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            text-align: center;
+            z-index: 1;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .pricing-grid {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 2rem;
+            width: 280px;
+            text-align: left;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover:not(.disabled) {
+            transform: translateY(-5px);
+            border-color: var(--neon-blue);
+        }
+
+        .card.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            filter: grayscale(100%);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            font-size: 1.8rem;
+        }
+
+        .card p {
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .btn {
+            display: inline-block;
+            width: 100%;
+            padding: 12px 0;
+            margin-top: 1.5rem;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s, box-shadow 0.3s;
+            text-align: center;
+        }
+
+        .btn.active {
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+            box-shadow: 0 0 15px rgba(188, 19, 254, 0.4);
+        }
+
+        .btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn:disabled {
+            cursor: not-allowed;
+        }
+
+        .badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--neon-purple);
+            font-size: 0.7rem;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: bold;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: #111;
+            border: 1px solid var(--neon-purple);
+            border-radius: 12px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 0 30px rgba(188, 19, 254, 0.2);
+        }
+
+        .modal h3 {
+            margin-top: 0;
+        }
+
+        .input-group {
+            margin: 1.5rem 0;
+        }
+
+        .input-group input {
+            width: 90%;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--neon-blue);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-cancel {
+            background: transparent;
+            color: var(--text-muted);
+        }
+        
+        .btn-cancel:hover { color: #fff; }
+
+        .btn-save {
+            background: var(--neon-purple);
+            color: #fff;
+        }
+
+        /* Status Output */
+        #status-box {
+            margin-top: 2rem;
+            padding: 1rem;
+            border-radius: 8px;
+            background: var(--glass-bg);
+            border: 1px dashed var(--glass-border);
+            min-height: 50px;
+            width: 100%;
+            box-sizing: border-box;
+            font-family: monospace;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Wähle dein Setup</h1>
+        
+        <div class="pricing-grid">
+            <!-- FREE TIER -->
+            <div class="card" id="card-free">
+                <h2>Free</h2>
+                <p>100% lokal im Browser. Keine Server, keine Tokens nötig. Perfekt für den Start.</p>
+                <button class="btn" id="btn-free" onclick="selectTier('free')">Aktivieren</button>
+            </div>
+
+            <!-- PRO TIER -->
+            <div class="card" id="card-pro">
+                <h2>Pro</h2>
+                <p>Nutzt unseren Proxy (Vercel/Netlify) für erweiterte API-Calls (z.B. Notion API). Token benötigt.</p>
+                <button class="btn" id="btn-pro" onclick="selectTier('pro')">Aktivieren</button>
+            </div>
+
+            <!-- CLOUD TIER -->
+            <div class="card disabled">
+                <span class="badge">Coming Soon</span>
+                <h2>Cloud</h2>
+                <p>Vollständig gemanagte Lösung mit eigenen Datenbanken und Analytics.</p>
+                <button class="btn" disabled>Demnächst verfügbar</button>
+            </div>
+        </div>
+
+        <div id="status-box">Status: Wähle einen Plan...</div>
+    </div>
+
+    <!-- Token Modal für PRO -->
+    <div class="modal-overlay" id="token-modal">
+        <div class="modal">
+            <h3>Pro Token erforderlich</h3>
+            <p style="color: #a0a0a0; font-size: 0.9rem;">Bitte gib deinen Zugangstoken ein, um den Proxy-Service zu nutzen.</p>
+            <div class="input-group">
+                <input type="text" id="pro-token" placeholder="z.B. snp_abc123..." autocomplete="off">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-small btn-cancel" onclick="closeModal()">Abbrechen</button>
+                <button class="btn-small btn-save" onclick="saveTokenAndActivate()">Speichern & Aktivieren</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // ⚙️ KONFIGURATION
+        // ==========================================
+        const CONFIG = {
+            // URL für Vercel Proxy (passe den generierten Namen an, z.B. snippetly-daniel.vercel.app)
+            PROXY_VERCEL_URL: "https://snippetly-olelq2u7a-vlc4.vercel.app/api/notion",
+            
+            // URL für Netlify Proxy (passe den generierten Namen an)
+            PROXY_NETLIFY_URL: "https://DEIN-NETLIFY-PROJEKTNAME.netlify.app/api/notion",
+            
+            // Welcher Proxy soll aktiv genutzt werden? ('vercel' oder 'netlify')
+            ACTIVE_PROXY: "vercel" 
+        };
+
+        // ==========================================
+        // LOKALER STATE
+        // ==========================================
+        let currentTier = null;
+        let userToken = localStorage.getItem('snippetly_pro_token') || null;
+
+        // UI Elemente
+        const modal = document.getElementById('token-modal');
+        const tokenInput = document.getElementById('pro-token');
+        const statusBox = document.getElementById('status-box');
+        
+        function selectTier(tier) {
+            if (tier === 'free') {
+                currentTier = 'free';
+                updateUI();
+                executeAction('free');
+            } else if (tier === 'pro') {
+                if (!userToken) {
+                    modal.classList.add('active');
+                } else {
+                    currentTier = 'pro';
+                    updateUI();
+                    executeAction('pro');
+                }
+            }
+        }
+
+        function closeModal() {
+            modal.classList.remove('active');
+            tokenInput.value = '';
+        }
+
+        function saveTokenAndActivate() {
+            const token = tokenInput.value.trim();
+            if (token) {
+                userToken = token;
+                localStorage.setItem('snippetly_pro_token', token);
+                currentTier = 'pro';
+                closeModal();
+                updateUI();
+                executeAction('pro');
+            } else {
+                alert("Bitte einen gültigen Token eingeben.");
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('btn-free').classList.remove('active');
+            document.getElementById('btn-pro').classList.remove('active');
+            
+            if (currentTier === 'free') {
+                document.getElementById('btn-free').classList.add('active');
+                document.getElementById('btn-free').innerText = 'Aktiviert';
+                document.getElementById('btn-pro').innerText = 'Aktivieren';
+            } else if (currentTier === 'pro') {
+                document.getElementById('btn-pro').classList.add('active');
+                document.getElementById('btn-pro').innerText = 'Aktiviert';
+                document.getElementById('btn-free').innerText = 'Aktivieren';
+            }
+        }
+
+        async function executeAction(tier) {
+            if (tier === 'free') {
+                statusBox.innerHTML = `> [FREE MODE]<br>> Führe lokale Browser-Operationen aus...<br>> Alles bleibt auf dem Client. Keine Token-Validierung erforderlich.`;
+                // Hier kommt deine lokale Notion.js Logic rein
+            } else if (tier === 'pro') {
+                const proxyUrl = CONFIG.ACTIVE_PROXY === 'vercel' 
+                    ? CONFIG.PROXY_VERCEL_URL 
+                    : CONFIG.PROXY_NETLIFY_URL;
+                
+                statusBox.innerHTML = `> [PRO MODE]<br>> Nutze ${CONFIG.ACTIVE_PROXY.toUpperCase()} Proxy: ${proxyUrl}<br>> Sende Request mit Token...`;
+
+                try {
+                    // Test-Call an den Proxy
+                    const response = await fetch(proxyUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${userToken}`
+                        },
+                        body: JSON.stringify({ action: "ping" })
+                    });
+                    
+                    const data = await response.json();
+                    if(response.ok) {
+                        statusBox.innerHTML += `<br><br>> <span style="color:#00f3ff">Erfolg:</span> ${JSON.stringify(data)}`;
+                    } else {
+                        statusBox.innerHTML += `<br><br>> <span style="color:#ff4444">Fehler:</span> ${data.error || 'Unauthorized'}`;
+                    }
+                } catch (error) {
+                    statusBox.innerHTML += `<br><br>> <span style="color:#ff4444">Netzwerkfehler:</span> Proxy nicht erreichbar (${error.message}). Stelle sicher, dass Vercel/Netlify deployed ist.`;
+                }
+            }
+        }
+
+        // Init check
+        if (userToken) {
+            tokenInput.value = userToken;
+        }
+    </script>
+</body>
+</html>
