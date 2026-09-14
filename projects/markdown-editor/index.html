@@ -1,0 +1,1816 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Markdown Editor (Free) — OKF Wissens-Werkzeug</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+:root{
+  --bg-app:#0f172a; --bg-panel:#171826; --bg-panel-2:#1e1e2e; --bg-elevated:#242438;
+  --bg-input:#11121c; --border:#2d2e45; --border-soft:#252638;
+  --text-1:#e7e9f5; --text-2:#a3a7c2; --text-3:#6b7094;
+  --accent-a:#3b82f6; --accent-b:#8b5cf6;
+  --grad: linear-gradient(135deg,#3b82f6 0%,#8b5cf6 100%);
+  --grad-soft: linear-gradient(135deg, rgba(59,130,246,.15), rgba(139,92,246,.15));
+  --ok:#22c55e; --warn:#f59e0b; --danger:#ef4444;
+  --radius-s:6px; --radius-m:10px; --radius-l:16px;
+  --topbar-h:50px; --bottomnav-h:58px;
+  --shadow-1: 0 4px 24px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;}
+html,body{height:100%;margin:0;}
+body{
+  font-family:'Inter',system-ui,sans-serif; background:var(--bg-app); color:var(--text-1);
+  overflow:hidden; -webkit-font-smoothing:antialiased; font-size:14px;
+}
+button{font-family:inherit;}
+::-webkit-scrollbar{width:9px;height:9px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:#31324a;border-radius:8px;}
+::-webkit-scrollbar-thumb:hover{background:#3c3d5c;}
+.icon-btn{
+  display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;
+  border-radius:var(--radius-s);border:1px solid transparent;background:transparent;color:var(--text-2);
+  cursor:pointer;transition:.15s;
+}
+.icon-btn:hover{background:var(--bg-elevated);color:var(--text-1);}
+.icon-btn.active{background:var(--grad-soft);color:var(--accent-a);border-color:rgba(139,92,246,.35);}
+.icon-btn:disabled,.icon-btn.disabled{opacity:.35;cursor:not-allowed;pointer-events:none;}
+.icon-btn svg{width:17px;height:17px;}
+.btn{
+  display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius-s);
+  border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-1);cursor:pointer;
+  font-size:13px;font-weight:500;transition:.15s;
+}
+.btn:hover{border-color:var(--accent-a);}
+.btn svg{width:15px;height:15px;}
+.btn-primary{background:var(--grad);border:none;color:#fff;}
+.btn-primary:hover{filter:brightness(1.1);}
+.btn-danger{color:var(--danger);}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+input[type=text],input[type=search],input[type=password],input[type=url],textarea,select{
+  background:var(--bg-input);border:1px solid var(--border);color:var(--text-1);border-radius:var(--radius-s);
+  padding:8px 10px;font-family:inherit;font-size:13px;outline:none;width:100%;
+}
+input:focus,textarea:focus,select:focus{border-color:var(--accent-a);box-shadow:0 0 0 3px rgba(59,130,246,.15);}
+label{font-size:12px;color:var(--text-2);font-weight:600;letter-spacing:.02em;text-transform:uppercase;display:block;margin-bottom:6px;}
+.field{margin-bottom:16px;}
+.hint{font-size:11.5px;color:var(--text-3);margin-top:5px;line-height:1.5;}
+h1,h2,h3,h4{margin:0;}
+a{color:var(--accent-a);}
+.grad-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.tag-pill{display:inline-flex;align-items:center;gap:4px;background:var(--grad-soft);color:#a7b8ff;border:1px solid rgba(139,92,246,.3);border-radius:99px;padding:2px 10px;font-size:11.5px;font-weight:600;}
+.badge-pro{font-size:9.5px;font-weight:800;letter-spacing:.06em;background:var(--grad);color:#fff;padding:2px 6px;border-radius:5px;vertical-align:middle;margin-left:6px;}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-3);text-align:center;padding:30px;gap:10px;}
+.empty-state svg{width:36px;height:36px;opacity:.5;}
+.empty-state .t{font-weight:600;color:var(--text-2);font-size:13.5px;}
+.empty-state .s{font-size:12px;max-width:220px;}
+
+/* ===== APP SHELL ===== */
+#app{height:100vh;display:flex;flex-direction:column;}
+#topbar{
+  height:var(--topbar-h);flex-shrink:0;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
+  background:var(--bg-panel);border-bottom:1px solid var(--border);padding:0 10px;position:relative;z-index:50;
+}
+#topbar .tb-left,#topbar .tb-right{display:flex;align-items:center;gap:4px;}
+#topbar .tb-right{justify-content:flex-end;}
+#topbar .tb-center{display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;font-size:15px;letter-spacing:-.01em;}
+#topbar .tb-center .logo-mark{width:22px;height:22px;border-radius:6px;background:var(--grad);display:flex;align-items:center;justify-content:center;}
+#topbar .tb-center .logo-mark svg{width:13px;height:13px;color:#fff;}
+.save-dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex-shrink:0;transition:.2s;}
+.save-dot.dirty{background:var(--warn);}
+.vault-label{font-size:12px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;}
+.gpu-pill{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-2);padding:4px 9px;border-radius:99px;border:1px solid var(--border);cursor:pointer;}
+.gpu-pill .dot{width:6px;height:6px;border-radius:50%;background:var(--text-3);}
+.gpu-pill.ok .dot{background:var(--ok);} .gpu-pill.bad .dot{background:var(--danger);} .gpu-pill.checking .dot{background:var(--warn);animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+#main-body{flex:1;display:flex;overflow:hidden;position:relative;min-height:0;}
+
+/* SIDEBARS */
+.sidebar{
+  background:var(--bg-panel);display:flex;flex-shrink:0;position:relative;height:100%;overflow:hidden;
+  transition:width .16s ease, transform .2s ease;
+}
+.sidebar.collapsed{width:0 !important;}
+#sidebar-left{border-right:1px solid var(--border);}
+#sidebar-right{border-left:1px solid var(--border);}
+.sidebar-tabstrip{width:42px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:3px;background:var(--bg-panel-2);border-right:1px solid var(--border-soft);overflow-y:auto;}
+#sidebar-right .sidebar-tabstrip{order:2;border-right:none;border-left:1px solid var(--border-soft);}
+.sidebar-content{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden;}
+#sidebar-right .sidebar-content{order:1;}
+.panel{display:none;flex-direction:column;height:100%;overflow:hidden;}
+.panel.active{display:flex;}
+.panel-header{padding:12px 14px;border-bottom:1px solid var(--border-soft);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.panel-header h3{font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-2);}
+.panel-header .actions{display:flex;gap:2px;}
+.panel-body{flex:1;overflow-y:auto;padding:10px;}
+.resize-handle{position:absolute;top:0;bottom:0;width:6px;cursor:col-resize;z-index:20;background:transparent;}
+.resize-handle:hover,.resize-handle.dragging{background:rgba(139,92,246,.3);}
+#sidebar-left .resize-handle{right:-3px;}
+#sidebar-right .resize-handle{left:-3px;}
+
+/* FILE EXPLORER */
+.tree-item{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:var(--radius-s);cursor:pointer;font-size:13px;color:var(--text-2);user-select:none;}
+.tree-item:hover{background:var(--bg-elevated);color:var(--text-1);}
+.tree-item.active{background:var(--grad-soft);color:#fff;}
+.tree-item svg{width:14px;height:14px;flex-shrink:0;}
+.tree-item .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tree-item .del{opacity:0;width:20px;height:20px;}
+.tree-item:hover .del{opacity:1;}
+.tree-folder-children{margin-left:16px;border-left:1px dashed var(--border);padding-left:4px;}
+.explorer-toolbar{display:flex;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border-soft);}
+.explorer-toolbar input{flex:1;}
+
+/* OKF PANEL */
+.okf-conf-select{display:flex;gap:6px;flex-wrap:wrap;}
+.okf-conf-opt{padding:6px 10px;border-radius:99px;border:1px solid var(--border);font-size:11.5px;cursor:pointer;color:var(--text-2);}
+.okf-conf-opt.sel{background:var(--grad);color:#fff;border-color:transparent;font-weight:700;}
+.taginput{display:flex;flex-wrap:wrap;gap:5px;padding:7px;border:1px solid var(--border);border-radius:var(--radius-s);background:var(--bg-input);}
+.taginput input{border:none;background:transparent;flex:1;min-width:80px;padding:2px;}
+.taginput .tag-pill button{background:none;border:none;color:inherit;cursor:pointer;padding:0;margin-left:2px;line-height:1;}
+.reflist{display:flex;flex-direction:column;gap:6px;}
+.reflist .refrow{display:flex;gap:6px;}
+.reflist .refrow input{flex:1;}
+
+/* AI CHAT PANEL */
+.chat-msgs{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:10px;}
+.chat-msg{max-width:92%;padding:9px 12px;border-radius:12px;font-size:13px;line-height:1.5;}
+.chat-msg.user{align-self:flex-end;background:var(--grad);color:#fff;border-bottom-right-radius:3px;}
+.chat-msg.assistant{align-self:flex-start;background:var(--bg-elevated);border:1px solid var(--border-soft);border-bottom-left-radius:3px;}
+.chat-msg.system-note{align-self:center;font-size:11px;color:var(--text-3);background:none;}
+.chat-input-bar{display:flex;gap:6px;padding:10px;border-top:1px solid var(--border-soft);flex-shrink:0;}
+.chat-input-bar textarea{resize:none;height:38px;font-family:inherit;}
+.copilot-row{display:flex;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border-soft);flex-wrap:wrap;flex-shrink:0;}
+.copilot-row .btn{font-size:11.5px;padding:5px 9px;}
+
+/* GRAPH */
+#graph-canvas{width:100%;height:100%;display:block;cursor:grab;}
+.graph-toolbar{display:flex;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border-soft);flex-shrink:0;}
+
+/* MAIN EDITOR */
+#editor-col{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--bg-app);}
+#doc-toolbar{display:flex;align-items:center;gap:2px;padding:6px 8px;border-bottom:1px solid var(--border);background:var(--bg-panel);flex-shrink:0;overflow-x:auto;}
+#doc-toolbar .sep{width:1px;height:20px;background:var(--border);margin:0 5px;flex-shrink:0;}
+#doc-title-bar{padding:14px 22px 4px;flex-shrink:0;}
+#doc-title-bar input{background:transparent;border:none;font-size:22px;font-weight:800;padding:2px 0;color:var(--text-1);}
+#doc-meta-line{padding:0 22px 8px;font-size:11.5px;color:var(--text-3);display:flex;gap:14px;flex-shrink:0;}
+#editor-split{flex:1;display:flex;overflow:hidden;min-height:0;}
+#editor-input{flex:1;border:none;background:transparent;color:var(--text-1);font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.75;padding:6px 22px 40px;resize:none;outline:none;min-width:0;}
+#editor-preview{flex:1;overflow-y:auto;padding:6px 26px 60px;min-width:0;border-left:1px solid var(--border-soft);}
+#editor-split.mode-edit #editor-preview{display:none;}
+#editor-split.mode-edit #editor-input{border-left:none;}
+#editor-split.mode-preview #editor-input{display:none;}
+#editor-split.mode-preview #editor-preview{border-left:none;}
+.markdown-body{color:var(--text-1);line-height:1.75;font-size:14.5px;}
+.markdown-body h1,.markdown-body h2,.markdown-body h3{font-weight:800;margin:22px 0 10px;line-height:1.3;}
+.markdown-body h1{font-size:26px;}.markdown-body h2{font-size:21px;}.markdown-body h3{font-size:17px;}
+.markdown-body p{margin:0 0 12px;}
+.markdown-body code{background:var(--bg-elevated);padding:2px 5px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:.88em;}
+.markdown-body pre{background:var(--bg-input);border:1px solid var(--border);padding:12px 14px;border-radius:var(--radius-m);overflow-x:auto;}
+.markdown-body pre code{background:none;padding:0;}
+.markdown-body blockquote{border-left:3px solid var(--accent-b);margin:0 0 12px;padding:2px 14px;color:var(--text-2);}
+.markdown-body ul,.markdown-body ol{padding-left:22px;margin:0 0 12px;}
+.markdown-body a.wikilink{color:#a7b8ff;background:rgba(139,92,246,.12);padding:1px 5px;border-radius:5px;text-decoration:none;border-bottom:1px solid rgba(139,92,246,.4);cursor:pointer;}
+.markdown-body a.wikilink.broken{color:var(--warn);border-bottom-style:dashed;}
+.markdown-body table{border-collapse:collapse;width:100%;margin-bottom:12px;}
+.markdown-body th,.markdown-body td{border:1px solid var(--border);padding:6px 10px;text-align:left;}
+.backlinks-block{margin-top:34px;padding-top:16px;border-top:1px solid var(--border);}
+.backlinks-block h4{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);margin-bottom:10px;}
+.backlink-item{display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:var(--radius-s);cursor:pointer;font-size:13px;color:var(--text-2);border:1px solid var(--border-soft);margin-bottom:6px;}
+.backlink-item:hover{border-color:var(--accent-a);color:var(--text-1);}
+
+/* BANNERS */
+#hw-banner{display:none;align-items:center;gap:10px;background:linear-gradient(90deg,rgba(245,158,11,.15),rgba(239,68,68,.1));border-bottom:1px solid rgba(245,158,11,.35);padding:9px 18px;font-size:12.5px;color:#fbbf24;flex-shrink:0;}
+#hw-banner.show{display:flex;}
+#hw-banner svg{width:16px;height:16px;flex-shrink:0;}
+#hw-banner button{margin-left:auto;flex-shrink:0;}
+
+/* BOTTOM NAV (mobile) */
+#bottom-nav{display:none;height:var(--bottomnav-h);flex-shrink:0;background:var(--bg-panel);border-top:1px solid var(--border);align-items:center;justify-content:space-around;z-index:60;}
+.bn-item{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--text-3);background:none;border:none;padding:6px 10px;cursor:pointer;font-size:9.5px;font-weight:600;}
+.bn-item svg{width:20px;height:20px;}
+.bn-item.active{color:var(--accent-a);}
+
+/* SETTINGS PAGE */
+#settings-page{position:fixed;inset:0;background:var(--bg-app);z-index:200;display:none;flex-direction:column;}
+#settings-page.show{display:flex;}
+#settings-header{height:var(--topbar-h);flex-shrink:0;display:flex;align-items:center;gap:12px;padding:0 18px;border-bottom:1px solid var(--border);background:var(--bg-panel);}
+#settings-header h2{font-size:15px;font-weight:800;}
+#settings-body{flex:1;display:flex;overflow:hidden;}
+#settings-tabs{width:210px;flex-shrink:0;border-right:1px solid var(--border);padding:14px 10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;background:var(--bg-panel);}
+.settings-tab-btn{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius-s);border:none;background:none;color:var(--text-2);cursor:pointer;font-size:13px;font-weight:600;text-align:left;}
+.settings-tab-btn:hover{background:var(--bg-elevated);color:var(--text-1);}
+.settings-tab-btn.active{background:var(--grad-soft);color:#fff;}
+.settings-tab-btn svg{width:16px;height:16px;flex-shrink:0;}
+#settings-content{flex:1;overflow-y:auto;padding:28px 34px;max-width:760px;}
+.settings-pane{display:none;}
+.settings-pane.active{display:block;}
+.settings-section{margin-bottom:30px;padding-bottom:26px;border-bottom:1px solid var(--border-soft);}
+.settings-section:last-child{border:none;}
+.settings-section h3{font-size:14.5px;font-weight:800;margin-bottom:4px;}
+.settings-section .desc{font-size:12px;color:var(--text-3);margin-bottom:16px;}
+.row-flex{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 0;}
+.switch{position:relative;width:38px;height:22px;flex-shrink:0;}
+.switch input{opacity:0;width:0;height:0;}
+.switch .slider{position:absolute;inset:0;background:var(--border);border-radius:99px;cursor:pointer;transition:.2s;}
+.switch .slider:before{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;}
+.switch input:checked + .slider{background:var(--grad);}
+.switch input:checked + .slider:before{transform:translateX(16px);}
+.card-row{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:var(--radius-m);margin-bottom:10px;background:var(--bg-panel-2);}
+.card-row .icn{width:34px;height:34px;border-radius:var(--radius-s);background:var(--grad-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.card-row .icn svg{width:17px;height:17px;color:#a7b8ff;}
+.card-row .info{flex:1;min-width:0;}
+.card-row .info .t{font-weight:700;font-size:13px;}
+.card-row .info .d{font-size:11.5px;color:var(--text-3);margin-top:2px;}
+.manage-list-row{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border-soft);border-radius:var(--radius-s);margin-bottom:6px;background:var(--bg-panel-2);}
+.manage-list-row .name{flex:1;font-size:13px;font-weight:600;}
+.manage-list-row select{width:auto;padding:5px 8px;font-size:11.5px;}
+.manage-list-row .ord-btns{display:flex;flex-direction:column;gap:1px;}
+.manage-list-row .ord-btns button{width:20px;height:14px;border:none;background:var(--bg-elevated);color:var(--text-3);cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:3px;}
+.manage-list-row .ord-btns svg{width:10px;height:10px;}
+.progress-bar{height:6px;border-radius:99px;background:var(--bg-elevated);overflow:hidden;margin-top:8px;}
+.progress-bar .fill{height:100%;background:var(--grad);width:0%;transition:.2s;}
+.persona-card{border:1px solid var(--border);border-radius:var(--radius-m);padding:14px;margin-bottom:10px;background:var(--bg-panel-2);}
+.persona-card.active-persona{border-color:var(--accent-a);}
+.persona-card .ph{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.persona-card .ph .t{font-weight:700;font-size:13.5px;}
+.kv-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 22px;}
+.info-stat{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border-soft);font-size:12.5px;}
+.info-stat .k{color:var(--text-3);}
+.info-stat .v{font-weight:600;font-family:'JetBrains Mono',monospace;}
+.modal-overlay{position:fixed;inset:0;background:rgba(5,6,15,.6);backdrop-filter:blur(3px);z-index:300;display:none;align-items:center;justify-content:center;}
+.modal-overlay.show{display:flex;}
+.modal-box{background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius-l);padding:22px;width:400px;max-width:90vw;box-shadow:var(--shadow-1);}
+.modal-box h3{font-size:15px;margin-bottom:16px;}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
+.toast-wrap{position:fixed;bottom:20px;right:20px;z-index:400;display:flex;flex-direction:column;gap:8px;}
+.toast{background:var(--bg-elevated);border:1px solid var(--border);border-left:3px solid var(--accent-a);border-radius:var(--radius-s);padding:11px 16px;font-size:12.5px;box-shadow:var(--shadow-1);animation:toastin .2s ease;max-width:300px;}
+.toast.err{border-left-color:var(--danger);}
+.toast.ok{border-left-color:var(--ok);}
+@keyframes toastin{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width:860px){
+  #bottom-nav{display:flex;}
+  #main-body{position:relative;}
+  .sidebar{position:absolute;top:0;bottom:0;z-index:80;box-shadow:var(--shadow-1);width:82vw !important;max-width:340px;}
+  #sidebar-left{left:0;transform:translateX(-100%);}
+  #sidebar-left.mobile-open{transform:translateX(0);}
+  #sidebar-right{right:0;transform:translateX(100%);}
+  #sidebar-right.mobile-open{transform:translateX(0);}
+  .resize-handle{display:none;}
+  #editor-col{width:100%;}
+  #settings-tabs{position:absolute;left:0;top:0;bottom:0;width:78vw;max-width:280px;transform:translateX(-100%);transition:.2s;z-index:10;}
+  #settings-tabs.mobile-open{transform:translateX(0);}
+  #doc-title-bar input{font-size:19px;}
+  .kv-grid{grid-template-columns:1fr;}
+}
+#mobile-scrim{display:none;position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:70;}
+#mobile-scrim.show{display:block;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="topbar">
+    <div class="tb-left">
+      <button class="icon-btn" id="btn-toggle-left" title="Linke Sidebar ein-/ausblenden" data-lucide-btn="panel-left"></button>
+      <span class="save-dot" id="save-dot" title="Gespeichert"></span>
+      <span class="vault-label" id="vault-label">Mein Vault</span>
+    </div>
+    <div class="tb-center">
+      <div class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 19V5a2 2 0 0 1 2-2h8l6 6v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M14 3v6h6"/></svg></div>
+      <span class="grad-text">Markdown Editor</span><span style="font-size:10px;color:var(--text-3);font-weight:700;">FREE</span>
+    </div>
+    <div class="tb-right">
+      <span class="gpu-pill checking" id="gpu-pill" title="Hardware-Check läuft…"><span class="dot"></span><span id="gpu-pill-text">Prüfe GPU…</span></span>
+      <button class="icon-btn" id="btn-open-settings" title="Einstellungen" data-lucide-btn="settings"></button>
+      <button class="icon-btn" id="btn-toggle-right" title="Rechte Sidebar ein-/ausblenden" data-lucide-btn="panel-right"></button>
+    </div>
+  </div>
+
+  <div id="hw-banner">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
+    <span>Hardware-Test nicht bestanden. WebLLM deaktiviert. Bitte passe deine Hardware an, aktiviere WebGPU oder schalte in den Settings auf das „Ollama KI-Engine AddOn" um (Pro/AddOn Feature).</span>
+    <button class="btn" id="hw-banner-settings" style="padding:4px 10px;font-size:11.5px;">Zu den Einstellungen</button>
+    <button class="icon-btn" id="hw-banner-close" data-lucide-btn="x"></button>
+  </div>
+
+  <div id="main-body">
+    <div id="mobile-scrim"></div>
+
+    <!-- LEFT SIDEBAR -->
+    <div class="sidebar" id="sidebar-left">
+      <div class="sidebar-tabstrip" id="left-tabstrip"></div>
+      <div class="sidebar-content" id="left-content"></div>
+      <div class="resize-handle" id="resize-left"></div>
+    </div>
+
+    <!-- EDITOR COLUMN -->
+    <div id="editor-col">
+      <div id="doc-toolbar"></div>
+      <div id="doc-title-bar">
+        <input type="text" id="doc-title-input" placeholder="Unbenannte Notiz" spellcheck="false">
+      </div>
+      <div id="doc-meta-line">
+        <span id="meta-modified">–</span>
+        <span id="meta-words">0 Wörter</span>
+        <span id="meta-path">/</span>
+      </div>
+      <div id="editor-split" class="mode-split">
+        <textarea id="editor-input" placeholder="Beginne zu schreiben… Nutze [[Notizname]] für Wikilinks." spellcheck="false"></textarea>
+        <div id="editor-preview"><div class="markdown-body" id="preview-content"></div></div>
+      </div>
+    </div>
+
+    <!-- RIGHT SIDEBAR -->
+    <div class="sidebar" id="sidebar-right">
+      <div class="sidebar-content" id="right-content"></div>
+      <div class="sidebar-tabstrip" id="right-tabstrip"></div>
+      <div class="resize-handle" id="resize-right"></div>
+    </div>
+  </div>
+
+  <div id="bottom-nav"></div>
+</div>
+
+<!-- SETTINGS FULL PAGE -->
+<div id="settings-page">
+  <div id="settings-header">
+    <button class="icon-btn" id="settings-mobile-toggle" data-lucide-btn="menu" style="display:none;"></button>
+    <button class="icon-btn" id="settings-close" data-lucide-btn="arrow-left"></button>
+    <h2>Einstellungen</h2>
+  </div>
+  <div id="settings-body">
+    <div id="settings-tabs"></div>
+    <div id="settings-content"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-box" id="modal-box"></div>
+</div>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<input type="file" id="hidden-file-input" style="display:none" webkitdirectory>
+<script>
+'use strict';
+/* =========================================================
+   MARKDOWN EDITOR (FREE) — Single-File OKF Knowledge Editor
+   ========================================================= */
+
+/* ---------- ICON DEFS (lucide data-lucide-btn -> injected as button label icons) ---------- */
+const ICONS = {
+  'panel-left':'panel-left','panel-right':'panel-right','settings':'settings','x':'x','menu':'menu',
+  'arrow-left':'arrow-left','folder':'folder','folder-open':'folder-open','file-text':'file-text',
+  'message-circle':'message-circle','share-2':'share-2','link':'link','puzzle':'puzzle-piece',
+  'sticky-note':'sticky-note','plus':'plus','trash-2':'trash-2','edit-3':'edit-3','save':'save',
+  'bold':'bold','italic':'italic','heading':'heading-1','list':'list','list-ordered':'list-ordered',
+  'quote':'quote','code':'code','mic':'mic','calendar':'calendar','layout-template':'layout-template',
+  'columns-2':'columns-2','eye':'eye','pencil':'pencil','sparkles':'sparkles','tags':'tags',
+  'network':'network','send':'send','chevron-up':'chevron-up','chevron-down':'chevron-down',
+  'cpu':'cpu','brain':'brain-circuit','users':'users','info':'info','download':'download',
+  'refresh-cw':'refresh-cw','check':'check','search':'search','file-plus':'file-plus',
+  'folder-plus':'folder-plus','more-vertical':'more-vertical','image':'image','minus':'minus'
+};
+
+/* ---------- IndexedDB / localStorage wrapper ---------- */
+const DB = (() => {
+  let idb = null, useLocal = false;
+  const DBNAME = 'MDEditorVaultDB', VERSION = 1;
+  function open() {
+    return new Promise((resolve) => {
+      if (!('indexedDB' in window)) { useLocal = true; return resolve(false); }
+      const req = indexedDB.open(DBNAME, VERSION);
+      req.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains('files')) db.createObjectStore('files', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('folders')) db.createObjectStore('folders', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('kv')) db.createObjectStore('kv', { keyPath: 'key' });
+      };
+      req.onsuccess = (e) => { idb = e.target.result; resolve(true); };
+      req.onerror = () => { useLocal = true; resolve(false); };
+    });
+  }
+  function lsKey(store) { return 'mde_' + store; }
+  function lsGetAll(store) { try { return JSON.parse(localStorage.getItem(lsKey(store)) || '[]'); } catch (e) { return []; } }
+  function lsSetAll(store, arr) { localStorage.setItem(lsKey(store), JSON.stringify(arr)); }
+
+  async function getAll(store) {
+    if (useLocal || !idb) return lsGetAll(store);
+    return new Promise((resolve) => {
+      const tx = idb.transaction(store, 'readonly');
+      const req = tx.objectStore(store).getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => resolve([]);
+    });
+  }
+  async function get(store, key) {
+    if (useLocal || !idb) return lsGetAll(store).find(x => (x.id || x.key) === key) || null;
+    return new Promise((resolve) => {
+      const tx = idb.transaction(store, 'readonly');
+      const req = tx.objectStore(store).get(key);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => resolve(null);
+    });
+  }
+  async function put(store, obj) {
+    if (useLocal || !idb) {
+      const arr = lsGetAll(store);
+      const idField = obj.id !== undefined ? 'id' : 'key';
+      const idx = arr.findIndex(x => x[idField] === obj[idField]);
+      if (idx >= 0) arr[idx] = obj; else arr.push(obj);
+      lsSetAll(store, arr);
+      return true;
+    }
+    return new Promise((resolve) => {
+      const tx = idb.transaction(store, 'readwrite');
+      tx.objectStore(store).put(obj);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => resolve(false);
+    });
+  }
+  async function del(store, key) {
+    if (useLocal || !idb) {
+      const arr = lsGetAll(store);
+      const idField = 'id' in (arr[0] || {}) ? 'id' : 'key';
+      lsSetAll(store, arr.filter(x => (x.id || x.key) !== key));
+      return true;
+    }
+    return new Promise((resolve) => {
+      const tx = idb.transaction(store, 'readwrite');
+      tx.objectStore(store).delete(key);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => resolve(false);
+    });
+  }
+  return { open, getAll, get, put, del };
+})();
+
+/* ---------- Utility ---------- */
+function uid() { return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 9); }
+function nowISO() { return new Date().toISOString(); }
+function fmtDate(iso) { if (!iso) return '–'; const d = new Date(iso); return d.toLocaleString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+function escapeHtml(s) { return (s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+function slugify(s) { return (s || '').trim(); }
+
+function toast(msg, type) {
+  const wrap = document.getElementById('toast-wrap');
+  const el = document.createElement('div');
+  el.className = 'toast' + (type ? ' ' + type : '');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = '.3s'; setTimeout(() => el.remove(), 300); }, 3200);
+}
+
+function renderIcons(root) {
+  (root || document).querySelectorAll('[data-lucide-btn]').forEach(el => {
+    const name = el.getAttribute('data-lucide-btn');
+    el.innerHTML = '';
+    const span = document.createElement('span');
+    span.setAttribute('data-lucide', ICONS[name] || name);
+    el.appendChild(span);
+  });
+  if (window.lucide) { try { lucide.createIcons({ nameAttr: 'data-lucide' }); } catch (e) {} }
+}
+
+/* ---------- Global state ---------- */
+const state = {
+  files: [], folders: [], personas: [], templates: [],
+  settings: null,
+  activeFileId: null,
+  activeLeftTab: null, activeRightTab: null,
+  webgpuAvailable: null,
+  webllmEngine: null, webllmLoading: false, webllmModelLoaded: null,
+  whisperPipeline: null, whisperLoading: false, whisperModelLoaded: null,
+  chats: {}, // fileId -> [{role,content}]
+  dirty: false,
+  graphAnimId: null,
+  activeSettingsTab: 'system',
+  speechRecog: null, isRecording: false,
+};
+
+const DEFAULT_PANELS = [
+  { id: 'explorer', label: 'Datei-Explorer', icon: 'folder', sidebar: 'left', order: 0, visible: true },
+  { id: 'okf', label: 'OKF Metadaten', icon: 'file-text', sidebar: 'left', order: 1, visible: true },
+  { id: 'addons', label: 'AddOns', icon: 'puzzle', sidebar: 'left', order: 2, visible: true },
+  { id: 'ai-chat', label: 'KI-Chat', icon: 'message-circle', sidebar: 'right', order: 0, visible: true },
+  { id: 'graph', label: 'Wissens-Graph', icon: 'share-2', sidebar: 'right', order: 1, visible: true },
+  { id: 'backlinks', label: 'Backlinks', icon: 'link', sidebar: 'right', order: 2, visible: true },
+  { id: 'custom', label: 'Notizen', icon: 'sticky-note', sidebar: 'hidden', order: 3, visible: false },
+];
+const DEFAULT_TOOLBAR = [
+  { id: 'bold', label: 'Fett', icon: 'bold', visible: true, order: 0 },
+  { id: 'italic', label: 'Kursiv', icon: 'italic', visible: true, order: 1 },
+  { id: 'heading', label: 'Überschrift', icon: 'heading', visible: true, order: 2 },
+  { id: 'quote', label: 'Zitat', icon: 'quote', visible: true, order: 3 },
+  { id: 'list', label: 'Liste', icon: 'list', visible: true, order: 4 },
+  { id: 'list-ordered', label: 'Nummerierte Liste', icon: 'list-ordered', visible: true, order: 5 },
+  { id: 'code', label: 'Code', icon: 'code', visible: true, order: 6 },
+  { id: 'wikilink', label: 'Wikilink einfügen', icon: 'link', visible: true, order: 7 },
+  { id: 'daily', label: 'Daily Note', icon: 'calendar', visible: true, order: 8 },
+  { id: 'template', label: 'Vorlage einfügen', icon: 'layout-template', visible: true, order: 9 },
+  { id: 'voice', label: 'Sprachnotiz', icon: 'mic', visible: true, order: 10 },
+  { id: 'viewmode', label: 'Ansicht wechseln', icon: 'columns-2', visible: true, order: 11 },
+  { id: 'copilot-summary', label: 'KI: Zusammenfassen', icon: 'sparkles', visible: true, order: 12 },
+  { id: 'copilot-tags', label: 'KI: Auto-Tagging', icon: 'tags', visible: true, order: 13 },
+  { id: 'copilot-links', label: 'KI: Smart Links', icon: 'network', visible: true, order: 14 },
+];
+const DEFAULT_BOTTOMNAV = [
+  { id: 'explorer', label: 'Dateien', icon: 'folder', visible: true, order: 0 },
+  { id: 'editor', label: 'Editor', icon: 'edit-3', visible: true, order: 1 },
+  { id: 'graph', label: 'Graph', icon: 'share-2', visible: true, order: 2 },
+  { id: 'ai-chat', label: 'KI-Chat', icon: 'message-circle', visible: true, order: 3 },
+  { id: 'settings', label: 'Settings', icon: 'settings', visible: true, order: 4 },
+];
+
+function defaultSettings() {
+  return {
+    key: 'settings',
+    theme: 'obsidian-dark',
+    leftWidth: 270, rightWidth: 300,
+    leftCollapsed: false, rightCollapsed: false,
+    panels: JSON.parse(JSON.stringify(DEFAULT_PANELS)),
+    toolbarItems: JSON.parse(JSON.stringify(DEFAULT_TOOLBAR)),
+    bottomNavItems: JSON.parse(JSON.stringify(DEFAULT_BOTTOMNAV)),
+    activePersonaId: null,
+    webllmModel: 'Llama-3.2-1B-Instruct-q4f16_1-MLC',
+    ollama: { enabled: false, unlocked: false, baseUrl: 'http://localhost:11434', model: 'llama3.2' },
+    whisper: { model: 'Xenova/whisper-tiny', language: 'de' },
+    addons: {
+      ollama: { unlocked: false },
+      websearch: { unlocked: false },
+      llmprovider: { unlocked: false },
+      pluginmanager: { unlocked: false },
+    },
+  };
+}
+
+/* ---------- OKF Frontmatter parse/serialize (dedicated schema) ---------- */
+function parseFrontmatter(content) {
+  const fm = { atomicDefinition: '', references: [], tags: [], confidence: 'Entwurf' };
+  let body = content || '';
+  const m = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(content || '');
+  if (!m) return { fm, body };
+  body = content.slice(m[0].length);
+  const lines = m[1].split(/\r?\n/);
+  let mode = null;
+  for (let raw of lines) {
+    const line = raw;
+    if (/^\s*-\s+/.test(line) && mode) {
+      const val = line.replace(/^\s*-\s+/, '').trim().replace(/^["']|["']$/g, '');
+      if (mode === 'references') fm.references.push(val);
+      if (mode === 'tags') fm.tags.push(val);
+      continue;
+    }
+    const kv = /^([A-Za-z]+):\s*(.*)$/.exec(line);
+    if (!kv) continue;
+    const key = kv[1], val = kv[2].trim();
+    if (key === 'atomicDefinition') { fm.atomicDefinition = val.replace(/^["']|["']$/g, ''); mode = null; }
+    else if (key === 'confidence') { fm.confidence = val.replace(/^["']|["']$/g, '') || 'Entwurf'; mode = null; }
+    else if (key === 'tags') {
+      if (val.startsWith('[')) { fm.tags = val.replace(/^\[|\]$/g, '').split(',').map(s => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean); mode = null; }
+      else mode = 'tags';
+    } else if (key === 'references') {
+      if (val) { fm.references = [val.replace(/^["']|["']$/g, '')]; mode = null; }
+      else mode = 'references';
+    } else mode = null;
+  }
+  return { fm, body };
+}
+function serializeFrontmatter(fm, body) {
+  let yaml = '---\n';
+  yaml += `atomicDefinition: "${(fm.atomicDefinition || '').replace(/"/g, '\\"')}"\n`;
+  yaml += 'tags: [' + (fm.tags || []).map(t => `"${t.replace(/"/g, '')}"`).join(', ') + ']\n';
+  if ((fm.references || []).length) {
+    yaml += 'references:\n' + fm.references.map(r => `  - ${r}`).join('\n') + '\n';
+  } else yaml += 'references: []\n';
+  yaml += `confidence: "${fm.confidence || 'Entwurf'}"\n`;
+  yaml += '---\n\n';
+  return yaml + (body || '').replace(/^\n+/, '');
+}
+
+/* ---------- Wikilink helpers ---------- */
+function extractWikilinks(content) {
+  const re = /\[\[([^\]|#]+)(?:\|[^\]]+)?\]\]/g;
+  const out = []; let m;
+  while ((m = re.exec(content || ''))) out.push(m[1].trim());
+  return out;
+}
+function findFileByName(name) {
+  const n = (name || '').trim().toLowerCase();
+  return state.files.find(f => f.name.toLowerCase() === n) || null;
+}
+
+/* ---------- File / Folder operations ---------- */
+async function loadVault() {
+  state.files = await DB.getAll('files');
+  state.folders = await DB.getAll('folders');
+  const personasRec = await DB.get('kv', 'personas');
+  state.personas = personasRec ? personasRec.value : [];
+  if (!state.personas.length) {
+    state.personas = [{ id: uid(), name: 'Standard-Assistent', systemPrompt: 'Du bist ein hilfreicher, präziser Wissens-Assistent. Antworte auf Deutsch, kurz und sachlich, und beziehe dich auf den bereitgestellten Dokument-Kontext, wenn vorhanden.' }];
+    await DB.put('kv', { key: 'personas', value: state.personas });
+  }
+  const templatesRec = await DB.get('kv', 'templates');
+  state.templates = templatesRec ? templatesRec.value : [];
+  if (!state.templates.length) {
+    state.templates = [
+      { id: uid(), name: 'OKF Definition', content: '## Atomare Definition\n\nBeschreibe hier den Kernbegriff präzise in einem Satz.\n\n## Kontext\n\n## Verwandte Konzepte\n\n- [[]]\n' },
+      { id: uid(), name: 'Meeting Notiz', content: '## Teilnehmer\n\n- \n\n## Agenda\n\n1. \n\n## Beschlüsse\n\n- \n\n## Nächste Schritte\n\n- [ ] ' },
+    ];
+    await DB.put('kv', { key: 'templates', value: state.templates });
+  }
+  const settingsRec = await DB.get('kv', 'settings');
+  state.settings = settingsRec ? Object.assign(defaultSettings(), settingsRec.value) : defaultSettings();
+  if (!state.settings.panels || !state.settings.panels.length) state.settings.panels = JSON.parse(JSON.stringify(DEFAULT_PANELS));
+  if (!state.settings.toolbarItems || !state.settings.toolbarItems.length) state.settings.toolbarItems = JSON.parse(JSON.stringify(DEFAULT_TOOLBAR));
+  if (!state.settings.bottomNavItems || !state.settings.bottomNavItems.length) state.settings.bottomNavItems = JSON.parse(JSON.stringify(DEFAULT_BOTTOMNAV));
+
+  if (!state.files.length) {
+    const welcome = {
+      id: uid(), name: 'Willkommen', folderId: null,
+      content: serializeFrontmatter(
+        { atomicDefinition: 'Dieser Editor verbindet Markdown-Notizen, OKF-Metadaten und lokale KI.', tags: ['willkommen', 'okf'], references: [], confidence: 'Verifiziert' },
+        '# Willkommen im Markdown Editor (Free)\n\nDies ist deine erste Notiz. Ein paar Dinge zum Ausprobieren:\n\n- Verlinke Notizen mit `[[Wikilinks]]`, z. B. [[Tagesnotizen]]\n- Öffne das **OKF Metadaten**-Panel links, um Definition, Quellen und Vertrauensniveau zu erfassen\n- Wechsle rechts zum **Wissens-Graph**, um Verknüpfungen zu sehen\n- Nutze den **KI-Chat** rechts, sobald WebLLM geladen ist (Einstellungen → KI)\n- Erstelle über den Kalender-Button eine **Daily Note**\n\nAlle Daten bleiben lokal in deinem Browser gespeichert (IndexedDB).'
+      ),
+      created: nowISO(), modified: nowISO(),
+    };
+    state.files.push(welcome);
+    await DB.put('files', welcome);
+    state.activeFileId = welcome.id;
+  } else {
+    state.activeFileId = state.files[0].id;
+  }
+}
+async function saveSettings() { await DB.put('kv', { key: 'settings', value: state.settings }); }
+async function savePersonas() { await DB.put('kv', { key: 'personas', value: state.personas }); }
+async function saveTemplates() { await DB.put('kv', { key: 'templates', value: state.templates }); }
+
+function getActiveFile() { return state.files.find(f => f.id === state.activeFileId) || null; }
+
+async function createFile(name, folderId, initialContent) {
+  const f = { id: uid(), name: name || 'Unbenannt', folderId: folderId || null, content: initialContent || '', created: nowISO(), modified: nowISO() };
+  state.files.push(f);
+  await DB.put('files', f);
+  return f;
+}
+async function createFolder(name, parentId) {
+  const fo = { id: uid(), name: name || 'Ordner', parentId: parentId || null };
+  state.folders.push(fo);
+  await DB.put('folders', fo);
+  return fo;
+}
+async function deleteFile(id) {
+  state.files = state.files.filter(f => f.id !== id);
+  await DB.del('files', id);
+  if (state.activeFileId === id) state.activeFileId = state.files[0] ? state.files[0].id : null;
+}
+async function deleteFolder(id) {
+  const toDelete = state.files.filter(f => f.folderId === id);
+  for (const f of toDelete) await deleteFile(f.id);
+  state.folders = state.folders.filter(fo => fo.id !== id);
+  await DB.del('folders', id);
+}
+const persistActiveFile = debounce(async () => {
+  const f = getActiveFile();
+  if (!f) return;
+  f.modified = nowISO();
+  await DB.put('files', f);
+  state.dirty = false;
+  updateSaveDot();
+  renderPreview();
+  renderExplorer();
+  renderBacklinks();
+}, 500);
+
+function updateSaveDot() {
+  const dot = document.getElementById('save-dot');
+  dot.className = 'save-dot' + (state.dirty ? ' dirty' : '');
+  dot.title = state.dirty ? 'Ungespeicherte Änderungen…' : 'Gespeichert';
+}
+
+/* ---------- Editor <-> preview ---------- */
+function renderMarkdownWithWikilinks(md) {
+  let html = '';
+  try { html = marked.parse(md || '', { breaks: true }); } catch (e) { html = '<p>' + escapeHtml(md) + '</p>'; }
+  html = html.replace(/\[\[([^\]|#]+)(?:\|([^\]]+))?\]\]/g, (whole, target, label) => {
+    const exists = !!findFileByName(target);
+    return `<a class="wikilink${exists ? '' : ' broken'}" data-target="${escapeHtml(target.trim())}">${escapeHtml((label || target).trim())}</a>`;
+  });
+  return html;
+}
+function renderPreview() {
+  const f = getActiveFile();
+  const previewEl = document.getElementById('preview-content');
+  if (!f) { previewEl.innerHTML = '<div class="empty-state"><span data-lucide="file-text"></span><div class="t">Keine Notiz ausgewählt</div></div>'; renderIcons(previewEl); return; }
+  const { body } = parseFrontmatter(f.content);
+  let html = renderMarkdownWithWikilinks(body);
+  html += renderBacklinksHtml(f.name);
+  previewEl.innerHTML = html;
+  previewEl.querySelectorAll('.wikilink').forEach(a => {
+    a.addEventListener('click', () => openOrCreateWikilink(a.getAttribute('data-target')));
+  });
+  previewEl.querySelectorAll('.backlink-item').forEach(a => {
+    a.addEventListener('click', () => { openFile(a.getAttribute('data-id')); });
+  });
+}
+function renderBacklinksHtml(fileName) {
+  const links = state.files.filter(f => f.name !== fileName && extractWikilinks(f.content).some(t => t.toLowerCase() === fileName.toLowerCase()));
+  if (!links.length) return '<div class="backlinks-block"><h4>Backlinks</h4><div style="color:var(--text-3);font-size:12.5px;">Keine eingehenden Verlinkungen.</div></div>';
+  return '<div class="backlinks-block"><h4>Backlinks (' + links.length + ')</h4>' +
+    links.map(f => `<div class="backlink-item" data-id="${f.id}"><span data-lucide="file-text" style="width:13px;height:13px;"></span>${escapeHtml(f.name)}</div>`).join('') +
+    '</div>';
+}
+async function openOrCreateWikilink(name) {
+  let f = findFileByName(name);
+  if (!f) { f = await createFile(name, null, ''); toast('Neue Notiz „' + name + '“ erstellt', 'ok'); }
+  openFile(f.id);
+}
+function openFile(id) {
+  state.activeFileId = id;
+  const f = getActiveFile();
+  document.getElementById('doc-title-input').value = f ? f.name : '';
+  const { body } = parseFrontmatter(f ? f.content : '');
+  document.getElementById('editor-input').value = body;
+  renderPreview();
+  renderExplorer();
+  renderOkfPanel();
+  renderBacklinks();
+  updateMetaLine();
+  if (window.innerWidth <= 860) closeMobileSidebars();
+}
+function updateMetaLine() {
+  const f = getActiveFile();
+  const words = document.getElementById('editor-input').value.trim().split(/\s+/).filter(Boolean).length;
+  document.getElementById('meta-modified').textContent = f ? ('Bearbeitet: ' + fmtDate(f.modified)) : '–';
+  document.getElementById('meta-words').textContent = words + ' Wörter';
+  document.getElementById('meta-path').textContent = f ? pathForFile(f) : '/';
+}
+function pathForFile(f) {
+  if (!f.folderId) return '/' + f.name + '.md';
+  const chain = []; let cur = state.folders.find(x => x.id === f.folderId);
+  while (cur) { chain.unshift(cur.name); cur = state.folders.find(x => x.id === cur.parentId); }
+  return '/' + chain.join('/') + '/' + f.name + '.md';
+}
+
+/* ---------- Editor input wiring ---------- */
+function wireEditorInput() {
+  const input = document.getElementById('editor-input');
+  const titleInput = document.getElementById('doc-title-input');
+  input.addEventListener('input', () => {
+    const f = getActiveFile(); if (!f) return;
+    const { fm } = parseFrontmatter(f.content);
+    f.content = serializeFrontmatter(fm, input.value);
+    state.dirty = true; updateSaveDot(); updateMetaLine();
+    debouncedPreview();
+    persistActiveFile();
+  });
+  titleInput.addEventListener('input', () => {
+    const f = getActiveFile(); if (!f) return;
+    f.name = titleInput.value.trim() || 'Unbenannt';
+    state.dirty = true; updateSaveDot();
+    persistActiveFile();
+  });
+  input.addEventListener('scroll', () => {}, { passive: true });
+}
+const debouncedPreview = debounce(renderPreview, 250);
+
+/* ---------- Toolbar (doc toolbar) ---------- */
+function insertAtCursor(text, wrapSelection) {
+  const input = document.getElementById('editor-input');
+  const start = input.selectionStart, end = input.selectionEnd;
+  const sel = input.value.slice(start, end);
+  let insertText = text, newCursor;
+  if (wrapSelection) {
+    insertText = text.pre + sel + text.post;
+    newCursor = start + text.pre.length + sel.length + (sel ? 0 : 0);
+  }
+  input.value = input.value.slice(0, start) + insertText + input.value.slice(end);
+  const cursorPos = wrapSelection ? (sel ? start + text.pre.length + sel.length + text.post.length : start + text.pre.length) : start + insertText.length;
+  input.focus();
+  input.setSelectionRange(cursorPos, cursorPos);
+  input.dispatchEvent(new Event('input'));
+}
+const TOOLBAR_ACTIONS = {
+  bold: () => insertAtCursor({ pre: '**', post: '**' }, true),
+  italic: () => insertAtCursor({ pre: '_', post: '_' }, true),
+  heading: () => insertAtCursor({ pre: '## ', post: '' }, true),
+  quote: () => insertAtCursor({ pre: '> ', post: '' }, true),
+  list: () => insertAtCursor({ pre: '- ', post: '' }, true),
+  'list-ordered': () => insertAtCursor({ pre: '1. ', post: '' }, true),
+  code: () => insertAtCursor({ pre: '`', post: '`' }, true),
+  wikilink: () => insertAtCursor('[[]]', false),
+  daily: () => createOrOpenDailyNote(),
+  template: () => openTemplatePicker(),
+  voice: () => toggleVoiceRecording(),
+  viewmode: () => cycleViewMode(),
+  'copilot-summary': () => runCopilotAction('summary'),
+  'copilot-tags': () => runCopilotAction('tags'),
+  'copilot-links': () => runCopilotAction('links'),
+};
+function renderDocToolbar() {
+  const bar = document.getElementById('doc-toolbar');
+  bar.innerHTML = '';
+  const items = state.settings.toolbarItems.filter(i => i.visible).sort((a, b) => a.order - b.order);
+  items.forEach((item, idx) => {
+    if (['daily', 'copilot-summary'].includes(item.id) && idx > 0) {
+      const sep = document.createElement('div'); sep.className = 'sep'; bar.appendChild(sep);
+    }
+    const btn = document.createElement('button');
+    btn.className = 'icon-btn'; btn.title = item.label;
+    btn.setAttribute('data-lucide-btn', item.icon);
+    if (item.id.startsWith('copilot')) btn.classList.toggle('disabled', !aiIsUsable());
+    if (item.id === 'voice') btn.id = 'voice-toolbar-btn';
+    btn.addEventListener('click', () => TOOLBAR_ACTIONS[item.id] && TOOLBAR_ACTIONS[item.id]());
+    bar.appendChild(btn);
+  });
+  renderIcons(bar);
+}
+function cycleViewMode() {
+  const split = document.getElementById('editor-split');
+  const modes = ['mode-split', 'mode-edit', 'mode-preview'];
+  const cur = modes.find(m => split.classList.contains(m)) || 'mode-split';
+  const next = modes[(modes.indexOf(cur) + 1) % modes.length];
+  split.classList.remove(...modes); split.classList.add(next);
+  toast(next === 'mode-split' ? 'Split-Ansicht' : next === 'mode-edit' ? 'Nur Editor' : 'Nur Vorschau');
+}
+
+/* ---------- Daily notes ---------- */
+async function createOrOpenDailyNote() {
+  const d = new Date();
+  const iso = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  let f = findFileByName(iso);
+  if (!f) {
+    f = await createFile(iso, null, serializeFrontmatter({ atomicDefinition: '', tags: ['daily-note'], references: [], confidence: 'Entwurf' }, `# ${iso}\n\n## Notizen\n\n- \n`));
+    toast('Daily Note erstellt: ' + iso, 'ok');
+  }
+  openFile(f.id);
+}
+
+/* ---------- Templates ---------- */
+function openTemplatePicker() {
+  const box = document.getElementById('modal-box');
+  box.innerHTML = `<h3>Vorlage einfügen</h3><div id="tpl-list"></div>
+    <div class="modal-actions"><button class="btn" id="tpl-manage-close">Schließen</button></div>`;
+  const list = box.querySelector('#tpl-list');
+  if (!state.templates.length) list.innerHTML = '<div class="hint">Keine Vorlagen vorhanden. Erstelle welche in den Einstellungen → System.</div>';
+  state.templates.forEach(t => {
+    const row = document.createElement('div'); row.className = 'card-row'; row.style.cursor = 'pointer';
+    row.innerHTML = `<div class="icn" data-lucide-btn="layout-template" style="width:34px;height:34px;"></div><div class="info"><div class="t">${escapeHtml(t.name)}</div><div class="d">${escapeHtml(t.content.slice(0, 60))}…</div></div>`;
+    row.addEventListener('click', () => { insertAtCursor(t.content, false); closeModal(); });
+    list.appendChild(row);
+  });
+  renderIcons(box);
+  box.querySelector('#tpl-manage-close').addEventListener('click', closeModal);
+  openModal();
+}
+function openModal() { document.getElementById('modal-overlay').classList.add('show'); }
+function closeModal() { document.getElementById('modal-overlay').classList.remove('show'); }
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('modal-overlay').addEventListener('click', (e) => { if (e.target.id === 'modal-overlay') closeModal(); });
+});
+
+/* ---------- Sidebar tab/panel system ---------- */
+function panelsForSide(side) {
+  return state.settings.panels.filter(p => p.sidebar === side && p.visible).sort((a, b) => a.order - b.order);
+}
+function renderSidebarTabs() {
+  ['left', 'right'].forEach(side => {
+    const strip = document.getElementById(side + '-tabstrip');
+    const content = document.getElementById(side + '-content');
+    strip.innerHTML = ''; 
+    const panels = panelsForSide(side);
+    if (!panels.length) { content.innerHTML = '<div class="empty-state"><span data-lucide="layout-template"></span><div class="t">Keine Panels</div><div class="s">Aktiviere Panels in den Einstellungen → System.</div></div>'; renderIcons(content); return; }
+    let active = side === 'left' ? state.activeLeftTab : state.activeRightTab;
+    if (!panels.find(p => p.id === active)) active = panels[0].id;
+    if (side === 'left') state.activeLeftTab = active; else state.activeRightTab = active;
+    panels.forEach(p => {
+      const btn = document.createElement('button');
+      btn.className = 'icon-btn' + (p.id === active ? ' active' : '');
+      btn.title = p.label; btn.setAttribute('data-lucide-btn', p.icon);
+      btn.addEventListener('click', () => {
+        if (side === 'left') state.activeLeftTab = p.id; else state.activeRightTab = p.id;
+        renderSidebarTabs();
+      });
+      strip.appendChild(btn);
+    });
+    content.innerHTML = '';
+    content.appendChild(buildPanel(active));
+    renderIcons(strip); renderIcons(content);
+  });
+}
+function buildPanel(id) {
+  const div = document.createElement('div'); div.className = 'panel active';
+  switch (id) {
+    case 'explorer': div.appendChild(buildExplorerPanel()); break;
+    case 'okf': div.appendChild(buildOkfPanel()); break;
+    case 'addons': div.appendChild(buildAddonsQuickPanel()); break;
+    case 'ai-chat': div.appendChild(buildChatPanel()); break;
+    case 'graph': div.appendChild(buildGraphPanel()); break;
+    case 'backlinks': div.appendChild(buildBacklinksPanel()); break;
+    case 'custom': div.appendChild(buildCustomPanel()); break;
+    default: div.innerHTML = '<div class="empty-state">Unbekanntes Panel</div>';
+  }
+  return div;
+}
+
+/* --- File Explorer Panel --- */
+function buildExplorerPanel() {
+  const wrap = document.createElement('div'); wrap.style.cssText = 'display:flex;flex-direction:column;height:100%;';
+  wrap.innerHTML = `
+    <div class="explorer-toolbar">
+      <input type="text" id="explorer-search" placeholder="Suchen…">
+      <button class="icon-btn" id="explorer-new-file" title="Neue Notiz" data-lucide-btn="file-plus"></button>
+      <button class="icon-btn" id="explorer-new-folder" title="Neuer Ordner" data-lucide-btn="folder-plus"></button>
+    </div>
+    <div class="panel-body" id="explorer-tree"></div>`;
+  setTimeout(() => {
+    wrap.querySelector('#explorer-new-file').addEventListener('click', async () => {
+      const f = await createFile('Neue Notiz ' + (state.files.length + 1), null, '');
+      openFile(f.id); renderExplorer();
+    });
+    wrap.querySelector('#explorer-new-folder').addEventListener('click', async () => {
+      await createFolder('Neuer Ordner', null); renderExplorer();
+    });
+    wrap.querySelector('#explorer-search').addEventListener('input', renderExplorer);
+  }, 0);
+  return wrap;
+}
+function renderExplorer() {
+  const treeEl = document.getElementById('explorer-tree');
+  if (!treeEl) return;
+  const q = (document.getElementById('explorer-search') || {}).value || '';
+  const qq = q.trim().toLowerCase();
+  treeEl.innerHTML = '';
+  function renderFolder(parentId, depth) {
+    const container = document.createElement('div');
+    state.folders.filter(fo => fo.parentId === parentId).forEach(fo => {
+      const row = document.createElement('div');
+      row.className = 'tree-item';
+      row.innerHTML = `<span data-lucide="folder"></span><span class="name">${escapeHtml(fo.name)}</span>
+        <button class="icon-btn del" data-lucide-btn="trash-2" style="width:20px;height:20px;"></button>`;
+      row.querySelector('.del').addEventListener('click', async (e) => { e.stopPropagation(); if (confirm('Ordner „' + fo.name + '“ inkl. Inhalt löschen?')) { await deleteFolder(fo.id); renderExplorer(); } });
+      container.appendChild(row);
+      const childWrap = document.createElement('div'); childWrap.className = 'tree-folder-children';
+      childWrap.appendChild(renderFolder(fo.id, depth + 1));
+      state.files.filter(f => f.folderId === fo.id && (!qq || f.name.toLowerCase().includes(qq))).forEach(f => childWrap.appendChild(fileRow(f)));
+      container.appendChild(childWrap);
+    });
+    return container;
+  }
+  function fileRow(f) {
+    const row = document.createElement('div');
+    row.className = 'tree-item' + (f.id === state.activeFileId ? ' active' : '');
+    row.innerHTML = `<span data-lucide="file-text"></span><span class="name">${escapeHtml(f.name)}</span>
+      <button class="icon-btn del" data-lucide-btn="trash-2" style="width:20px;height:20px;"></button>`;
+    row.addEventListener('click', () => openFile(f.id));
+    row.querySelector('.del').addEventListener('click', async (e) => { e.stopPropagation(); if (confirm('Notiz „' + f.name + '“ löschen?')) { await deleteFile(f.id); openFile(state.activeFileId); renderExplorer(); } });
+    return row;
+  }
+  treeEl.appendChild(renderFolder(null, 0));
+  state.files.filter(f => !f.folderId && (!qq || f.name.toLowerCase().includes(qq))).forEach(f => treeEl.appendChild(fileRow(f)));
+  renderIcons(treeEl);
+}
+
+/* --- OKF Metadata Panel --- */
+const CONF_LEVELS = ['Entwurf', 'In Prüfung', 'Verifiziert', 'Konfidentiell', 'Archiviert'];
+function buildOkfPanel() {
+  const wrap = document.createElement('div'); wrap.style.cssText = 'display:flex;flex-direction:column;height:100%;';
+  wrap.innerHTML = `<div class="panel-header"><h3>OKF Metadaten</h3><button class="icon-btn" id="okf-save" data-lucide-btn="save" title="Speichern"></button></div>
+    <div class="panel-body" id="okf-body"></div>`;
+  setTimeout(() => { wrap.querySelector('#okf-save').addEventListener('click', () => { saveOkfFromForm(); toast('OKF-Metadaten gespeichert', 'ok'); }); }, 0);
+  return wrap;
+}
+function renderOkfPanel() {
+  const body = document.getElementById('okf-body');
+  if (!body) return;
+  const f = getActiveFile();
+  if (!f) { body.innerHTML = '<div class="empty-state">Keine Notiz aktiv</div>'; return; }
+  const { fm } = parseFrontmatter(f.content);
+  body.innerHTML = `
+    <div class="field"><label>Atomare Definition</label><textarea id="okf-def" rows="3" placeholder="Präzise Ein-Satz-Definition…">${escapeHtml(fm.atomicDefinition)}</textarea></div>
+    <div class="field"><label>Kategorie-Tags</label><div class="taginput" id="okf-tags"></div><input type="text" id="okf-tag-input" placeholder="Tag eintippen + Enter" style="margin-top:6px;"></div>
+    <div class="field"><label>Referenzen / Quellen</label><div class="reflist" id="okf-refs"></div><button class="btn" id="okf-ref-add" style="margin-top:6px;font-size:11.5px;padding:5px 9px;"><span data-lucide-btn="plus" style="width:13px;height:13px;"></span> Quelle hinzufügen</button></div>
+    <div class="field"><label>Vertrauensniveau</label><div class="okf-conf-select" id="okf-conf"></div></div>`;
+  renderIcons(body);
+  const tagWrap = body.querySelector('#okf-tags');
+  let tags = [...fm.tags];
+  function drawTags() {
+    tagWrap.innerHTML = '';
+    tags.forEach((t, i) => {
+      const pill = document.createElement('span'); pill.className = 'tag-pill';
+      pill.innerHTML = `${escapeHtml(t)}<button data-i="${i}">×</button>`;
+      pill.querySelector('button').addEventListener('click', () => { tags.splice(i, 1); drawTags(); });
+      tagWrap.appendChild(pill);
+    });
+  }
+  drawTags();
+  body.querySelector('#okf-tag-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.target.value.trim()) { tags.push(e.target.value.trim()); e.target.value = ''; drawTags(); }
+  });
+  const refWrap = body.querySelector('#okf-refs');
+  let refs = [...fm.references];
+  function drawRefs() {
+    refWrap.innerHTML = '';
+    refs.forEach((r, i) => {
+      const row = document.createElement('div'); row.className = 'refrow';
+      row.innerHTML = `<input type="text" value="${escapeHtml(r)}"><button class="icon-btn" data-lucide-btn="x" style="width:26px;height:26px;"></button>`;
+      row.querySelector('input').addEventListener('input', (e) => { refs[i] = e.target.value; });
+      row.querySelector('button').addEventListener('click', () => { refs.splice(i, 1); drawRefs(); });
+      refWrap.appendChild(row);
+    });
+    renderIcons(refWrap);
+  }
+  drawRefs();
+  body.querySelector('#okf-ref-add').addEventListener('click', () => { refs.push(''); drawRefs(); });
+  const confWrap = body.querySelector('#okf-conf');
+  let conf = fm.confidence || 'Entwurf';
+  function drawConf() {
+    confWrap.innerHTML = '';
+    CONF_LEVELS.forEach(c => {
+      const opt = document.createElement('div'); opt.className = 'okf-conf-opt' + (c === conf ? ' sel' : ''); opt.textContent = c;
+      opt.addEventListener('click', () => { conf = c; drawConf(); });
+      confWrap.appendChild(opt);
+    });
+  }
+  drawConf();
+  body.dataset.getState = '1';
+  body._getOkfState = () => ({ atomicDefinition: body.querySelector('#okf-def').value, tags, references: refs.filter(r => r.trim()), confidence: conf });
+}
+function saveOkfFromForm() {
+  const body = document.getElementById('okf-body');
+  const f = getActiveFile();
+  if (!f || !body || !body._getOkfState) return;
+  const fm = body._getOkfState();
+  const { body: md } = parseFrontmatter(f.content);
+  f.content = serializeFrontmatter(fm, md);
+  f.modified = nowISO();
+  DB.put('files', f);
+  renderPreview();
+}
+
+/* --- Backlinks standalone panel (right sidebar) --- */
+function buildBacklinksPanel() {
+  const wrap = document.createElement('div'); wrap.style.cssText = 'display:flex;flex-direction:column;height:100%;';
+  wrap.innerHTML = `<div class="panel-header"><h3>Backlinks</h3></div><div class="panel-body" id="backlinks-body"></div>`;
+  return wrap;
+}
+function renderBacklinks() {
+  const el = document.getElementById('backlinks-body');
+  if (!el) return;
+  const f = getActiveFile();
+  if (!f) { el.innerHTML = '<div class="empty-state">Keine Notiz aktiv</div>'; return; }
+  const links = state.files.filter(x => x.name !== f.name && extractWikilinks(x.content).some(t => t.toLowerCase() === f.name.toLowerCase()));
+  if (!links.length) { el.innerHTML = '<div class="empty-state"><span data-lucide="link"></span><div class="s">Keine eingehenden Verlinkungen für „' + escapeHtml(f.name) + '“.</div></div>'; renderIcons(el); return; }
+  el.innerHTML = links.map(x => `<div class="backlink-item" data-id="${x.id}"><span data-lucide="file-text" style="width:13px;height:13px;"></span>${escapeHtml(x.name)}</div>`).join('');
+  el.querySelectorAll('.backlink-item').forEach(row => row.addEventListener('click', () => openFile(row.getAttribute('data-id'))));
+  renderIcons(el);
+}
+
+/* --- Custom panel (Benutzerdefiniert: freies Scratchpad) --- */
+function buildCustomPanel() {
+  const wrap = document.createElement('div'); wrap.style.cssText = 'display:flex;flex-direction:column;height:100%;';
+  wrap.innerHTML = `<div class="panel-header"><h3>Benutzerdefiniert</h3></div>
+    <div class="panel-body"><div class="hint" style="margin-bottom:8px;">Freier Notizzettel — unabhängig von der aktiven Datei, lokal gespeichert.</div>
+    <textarea id="scratchpad" rows="16" placeholder="Schnelle Notizen…"></textarea></div>`;
+  setTimeout(async () => {
+    const rec = await DB.get('kv', 'scratchpad');
+    wrap.querySelector('#scratchpad').value = rec ? rec.value : '';
+    wrap.querySelector('#scratchpad').addEventListener('input', debounce((e) => DB.put('kv', { key: 'scratchpad', value: e.target.value }), 400));
+  }, 0);
+  return wrap;
+}
+
+/* --- AddOns quick panel (sidebar) --- */
+function buildAddonsQuickPanel() {
+  const wrap = document.createElement('div'); wrap.style.cssText = 'display:flex;flex-direction:column;height:100%;';
+  wrap.innerHTML = `<div class="panel-header"><h3>AddOns</h3></div><div class="panel-body">
+    <div class="card-row">
+      <div class="icn" data-lucide-btn="cpu"></div>
+      <div class="info"><div class="t">Ollama KI-Engine</div><div class="d">Lokaler Ollama-Server als KI-Engine. Kostenpflichtig.</div></div>
+    </div>
+    <div class="hint" style="margin-bottom:14px;">Details &amp; Freischaltung unter Einstellungen → AddOns.</div>
+    <div class="card-row" style="opacity:.55;"><div class="icn" data-lucide-btn="search"></div><div class="info"><div class="t">Web-Suche <span class="badge-pro">PRO</span></div><div class="d">DuckDuckGo-Suche mit KI-Zusammenfassung.</div></div></div>
+    <div class="card-row" style="opacity:.55;"><div class="icn" data-lucide-btn="network"></div><div class="info"><div class="t">LLM Provider <span class="badge-pro">PRO</span></div><div class="d">OpenAI, Gemini, OpenRouter anbinden.</div></div></div>
+    <div class="card-row" style="opacity:.55;"><div class="icn" data-lucide-btn="puzzle"></div><div class="info"><div class="t">Plugin-Verwaltung <span class="badge-pro">PRO</span></div><div class="d">Community-Plugins installieren.</div></div></div>
+    <button class="btn btn-primary" id="addons-goto-settings" style="width:100%;margin-top:6px;">Zu den AddOn-Einstellungen</button>
+  </div>`;
+  setTimeout(() => wrap.querySelector('#addons-goto-settings').addEventListener('click', () => openSettings('addons')), 0);
+  renderIcons(wrap);
+  return wrap;
+}
+
+/* --- AI Chat panel --- */
+function buildChatPanel() {
+  const wrap = document.createElement('div'); wrap.style.cssText = 'display:flex;flex-direction:column;height:100%;';
+  wrap.innerHTML = `<div class="panel-header"><h3>KI-Chat</h3><div class="actions">
+      <button class="icon-btn" id="chat-clear" title="Verlauf löschen" data-lucide-btn="trash-2"></button></div></div>
+    <div class="copilot-row">
+      <button class="btn" data-cp="summary"><span data-lucide-btn="sparkles" style="width:13px;height:13px;"></span>Zusammenfassen</button>
+      <button class="btn" data-cp="tags"><span data-lucide-btn="tags" style="width:13px;height:13px;"></span>Auto-Tag</button>
+      <button class="btn" data-cp="links"><span data-lucide-btn="network" style="width:13px;height:13px;"></span>Smart Links</button>
+    </div>
+    <div class="chat-msgs" id="chat-msgs"></div>
+    <div class="chat-input-bar"><textarea id="chat-input" placeholder="Frage zum aktiven Dokument stellen…"></textarea>
+      <button class="icon-btn" id="chat-send" data-lucide-btn="send"></button></div>`;
+  setTimeout(() => {
+    wrap.querySelectorAll('[data-cp]').forEach(b => b.addEventListener('click', () => runCopilotAction(b.getAttribute('data-cp'))));
+    wrap.querySelector('#chat-send').addEventListener('click', sendChatMessage);
+    wrap.querySelector('#chat-input').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } });
+    wrap.querySelector('#chat-clear').addEventListener('click', () => { state.chats[state.activeFileId] = []; renderChatMsgs(); });
+  }, 0);
+  renderIcons(wrap);
+  return wrap;
+}
+function renderChatMsgs() {
+  const el = document.getElementById('chat-msgs'); if (!el) return;
+  const msgs = state.chats[state.activeFileId] || [];
+  if (!msgs.length) {
+    el.innerHTML = '<div class="chat-msg system-note">' + (aiIsUsable() ? 'Frag mich etwas zu „' + escapeHtml((getActiveFile() || {}).name || '') + '“.' : 'KI-Engine nicht aktiv. Lade ein WebLLM-Modell in den Einstellungen → KI, oder aktiviere das Ollama-AddOn.') + '</div>';
+    return;
+  }
+  el.innerHTML = msgs.map(m => `<div class="chat-msg ${m.role}">${escapeHtml(m.content)}</div>`).join('');
+  el.scrollTop = el.scrollHeight;
+}
+async function sendChatMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim(); if (!text) return;
+  if (!aiIsUsable()) { toast('Keine KI-Engine aktiv. Lade WebLLM oder aktiviere Ollama in den Einstellungen.', 'err'); return; }
+  if (!state.chats[state.activeFileId]) state.chats[state.activeFileId] = [];
+  state.chats[state.activeFileId].push({ role: 'user', content: text });
+  input.value = ''; renderChatMsgs();
+  const thinking = { role: 'assistant', content: '…' };
+  state.chats[state.activeFileId].push(thinking); renderChatMsgs();
+  try {
+    const f = getActiveFile();
+    const { body } = parseFrontmatter(f ? f.content : '');
+    const persona = state.personas.find(p => p.id === state.settings.activePersonaId) || state.personas[0];
+    const sys = (persona ? persona.systemPrompt : '') + '\n\nDokument-Kontext:\n' + (body || '').slice(0, 3000);
+    const reply = await aiComplete(sys, text);
+    thinking.content = reply;
+  } catch (e) { thinking.content = 'Fehler bei der KI-Anfrage: ' + e.message; }
+  renderChatMsgs();
+}
+
+/* --- Copilot actions --- */
+async function runCopilotAction(kind) {
+  if (!aiIsUsable()) { toast('Keine KI-Engine aktiv. Lade WebLLM oder aktiviere Ollama in den Einstellungen.', 'err'); return; }
+  const f = getActiveFile(); if (!f) return;
+  const { body, fm } = parseFrontmatter(f.content);
+  const persona = state.personas.find(p => p.id === state.settings.activePersonaId) || state.personas[0];
+  const sysBase = (persona ? persona.systemPrompt : '') + '\n\nAntworte ausschließlich auf Deutsch.';
+  if (!state.chats[state.activeFileId]) state.chats[state.activeFileId] = [];
+  const label = kind === 'summary' ? 'Zusammenfassung erstellen' : kind === 'tags' ? 'Auto-Tagging vorschlagen' : 'Smart-Link-Vorschläge finden';
+  state.chats[state.activeFileId].push({ role: 'user', content: '[Copilot] ' + label });
+  const thinking = { role: 'assistant', content: '…' };
+  state.chats[state.activeFileId].push(thinking); renderChatMsgs();
+  try {
+    let prompt;
+    if (kind === 'summary') prompt = 'Fasse folgendes Dokument in 3-5 prägnanten Sätzen zusammen:\n\n' + body;
+    else if (kind === 'tags') prompt = 'Schlage 3-6 kurze, sinnvolle Kategorie-Tags (Kleinbuchstaben, ohne #) für dieses Dokument vor, als kommagetrennte Liste:\n\n' + body;
+    else prompt = 'Hier ist eine Liste vorhandener Notiztitel: ' + state.files.map(x => x.name).filter(n => n !== f.name).join(', ') + '.\nSchlage vor, welche davon im folgenden Dokument sinnvoll als [[Wikilinks]] verlinkt werden könnten, und erkläre kurz warum:\n\n' + body;
+    const reply = await aiComplete(sysBase, prompt);
+    thinking.content = reply;
+    if (kind === 'tags') {
+      const newTags = reply.split(',').map(t => t.trim().replace(/^#/, '')).filter(Boolean).slice(0, 8);
+      const merged = Array.from(new Set([...(fm.tags || []), ...newTags]));
+      f.content = serializeFrontmatter(Object.assign({}, fm, { tags: merged }), body);
+      await DB.put('files', f); renderOkfPanel();
+    }
+  } catch (e) { thinking.content = 'Fehler: ' + e.message; }
+  renderChatMsgs();
+}
+
+/* --- Knowledge Graph --- */
+let graphNodes = [], graphEdges = [], graphCanvas = null, graphCtx = null, graphDrag = null, graphView = { x: 0, y: 0, scale: 1 };
+function buildGraphPanel() {
+  const wrap = document.createElement('div'); wrap.style.cssText = 'display:flex;flex-direction:column;height:100%;';
+  wrap.innerHTML = `<div class="graph-toolbar"><button class="btn" id="graph-refresh"><span data-lucide-btn="refresh-cw" style="width:13px;height:13px;"></span>Aktualisieren</button>
+    <span class="hint" style="align-self:center;">${state.files.length} Notizen</span></div>
+    <div style="flex:1;position:relative;overflow:hidden;"><canvas id="graph-canvas"></canvas></div>`;
+  setTimeout(() => { initGraph(); wrap.querySelector('#graph-refresh').addEventListener('click', initGraph); }, 0);
+  renderIcons(wrap);
+  return wrap;
+}
+function initGraph() {
+  graphCanvas = document.getElementById('graph-canvas'); if (!graphCanvas) return;
+  const parent = graphCanvas.parentElement;
+  graphCanvas.width = parent.clientWidth; graphCanvas.height = parent.clientHeight;
+  graphCtx = graphCanvas.getContext('2d');
+  graphNodes = state.files.map(f => ({ id: f.id, name: f.name, x: Math.random() * graphCanvas.width, y: Math.random() * graphCanvas.height, vx: 0, vy: 0 }));
+  graphEdges = [];
+  state.files.forEach(f => {
+    extractWikilinks(f.content).forEach(t => {
+      const target = findFileByName(t);
+      if (target && target.id !== f.id) graphEdges.push({ a: f.id, b: target.id });
+    });
+  });
+  if (state.graphAnimId) cancelAnimationFrame(state.graphAnimId);
+  wireGraphInteraction();
+  graphTick();
+}
+function graphTick() {
+  if (!graphCanvas) return;
+  const W = graphCanvas.width, H = graphCanvas.height;
+  const centerX = W / 2, centerY = H / 2;
+  graphNodes.forEach(n => {
+    let fx = (centerX - n.x) * 0.0018, fy = (centerY - n.y) * 0.0018;
+    graphNodes.forEach(o => { if (o === n) return; const dx = n.x - o.x, dy = n.y - o.y; const d2 = dx * dx + dy * dy + 0.01; const f = 900 / d2; fx += dx * f * 0.02; fy += dy * f * 0.02; });
+    n.vx = (n.vx + fx) * 0.85; n.vy = (n.vy + fy) * 0.85;
+  });
+  graphEdges.forEach(e => {
+    const a = graphNodes.find(n => n.id === e.a), b = graphNodes.find(n => n.id === e.b);
+    if (!a || !b) return;
+    const dx = b.x - a.x, dy = b.y - a.y, dist = Math.sqrt(dx * dx + dy * dy) || 1;
+    const targetD = 130, f = (dist - targetD) * 0.002;
+    a.vx += dx / dist * f; a.vy += dy / dist * f; b.vx -= dx / dist * f; b.vy -= dy / dist * f;
+  });
+  graphNodes.forEach(n => { if (n === graphDrag) return; n.x += n.vx; n.y += n.vy; n.x = Math.max(20, Math.min(W - 20, n.x)); n.y = Math.max(20, Math.min(H - 20, n.y)); });
+  graphCtx.clearRect(0, 0, W, H);
+  graphCtx.strokeStyle = 'rgba(139,92,246,.35)'; graphCtx.lineWidth = 1;
+  graphEdges.forEach(e => {
+    const a = graphNodes.find(n => n.id === e.a), b = graphNodes.find(n => n.id === e.b);
+    if (!a || !b) return;
+    graphCtx.beginPath(); graphCtx.moveTo(a.x, a.y); graphCtx.lineTo(b.x, b.y); graphCtx.stroke();
+  });
+  graphNodes.forEach(n => {
+    const isActive = n.id === state.activeFileId;
+    graphCtx.beginPath(); graphCtx.arc(n.x, n.y, isActive ? 9 : 6, 0, Math.PI * 2);
+    const grad = graphCtx.createLinearGradient(n.x - 8, n.y - 8, n.x + 8, n.y + 8);
+    grad.addColorStop(0, isActive ? '#3b82f6' : '#4b4d78'); grad.addColorStop(1, isActive ? '#8b5cf6' : '#31324a');
+    graphCtx.fillStyle = grad; graphCtx.fill();
+    graphCtx.fillStyle = '#c7c9e6'; graphCtx.font = '11px Inter, sans-serif';
+    graphCtx.fillText(n.name.slice(0, 20), n.x + 11, n.y + 4);
+  });
+  state.graphAnimId = requestAnimationFrame(graphTick);
+}
+function wireGraphInteraction() {
+  if (graphCanvas._wired) return; graphCanvas._wired = true;
+  graphCanvas.addEventListener('mousedown', (e) => {
+    const rect = graphCanvas.getBoundingClientRect(); const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    graphDrag = graphNodes.find(n => Math.hypot(n.x - mx, n.y - my) < 12) || null;
+    if (graphDrag) graphCanvas.style.cursor = 'grabbing';
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!graphDrag || !graphCanvas) return;
+    const rect = graphCanvas.getBoundingClientRect();
+    graphDrag.x = e.clientX - rect.left; graphDrag.y = e.clientY - rect.top; graphDrag.vx = 0; graphDrag.vy = 0;
+  });
+  window.addEventListener('mouseup', () => { if (graphCanvas) graphCanvas.style.cursor = 'grab'; graphDrag = null; });
+  graphCanvas.addEventListener('click', (e) => {
+    const rect = graphCanvas.getBoundingClientRect(); const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    const hit = graphNodes.find(n => Math.hypot(n.x - mx, n.y - my) < 12);
+    if (hit) openFile(hit.id);
+  });
+}
+
+/* ---------- Hardware / WebGPU check ---------- */
+async function checkHardware() {
+  const pill = document.getElementById('gpu-pill'), text = document.getElementById('gpu-pill-text');
+  pill.className = 'gpu-pill checking'; text.textContent = 'Prüfe GPU…';
+  let ok = false;
+  try {
+    if ('gpu' in navigator) {
+      const adapter = await navigator.gpu.requestAdapter();
+      ok = !!adapter;
+    }
+  } catch (e) { ok = false; }
+  state.webgpuAvailable = ok;
+  pill.className = 'gpu-pill ' + (ok ? 'ok' : 'bad');
+  text.textContent = ok ? 'WebGPU bereit' : 'Kein WebGPU';
+  document.getElementById('hw-banner').classList.toggle('show', !ok && !ollamaActive());
+  document.querySelectorAll('[data-cp], .icon-btn.disabled, #voice-toolbar-btn').forEach(() => {});
+  renderDocToolbar();
+  return ok;
+}
+function ollamaActive() { return state.settings.addons.ollama.unlocked && state.settings.ollama.enabled; }
+function aiIsUsable() { return !!state.webllmEngine || ollamaActive(); }
+
+/* ---------- WebLLM engine ---------- */
+let webllmModulePromise = null;
+function getWebLLMModule() {
+  if (!webllmModulePromise) webllmModulePromise = import('https://esm.run/@mlc-ai/web-llm');
+  return webllmModulePromise;
+}
+async function loadWebLLMModel(modelId, onProgress) {
+  if (!state.webgpuAvailable) throw new Error('WebGPU nicht verfügbar auf diesem Gerät.');
+  state.webllmLoading = true;
+  try {
+    const webllm = await getWebLLMModule();
+    const engine = await webllm.CreateMLCEngine(modelId, {
+      initProgressCallback: (report) => { if (onProgress) onProgress(report); }
+    });
+    state.webllmEngine = engine;
+    state.webllmModelLoaded = modelId;
+    state.webllmLoading = false;
+    return true;
+  } catch (e) {
+    state.webllmLoading = false;
+    throw e;
+  }
+}
+async function aiComplete(systemPrompt, userPrompt) {
+  if (state.webllmEngine) {
+    const res = await state.webllmEngine.chat.completions.create({
+      messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
+      temperature: 0.6,
+    });
+    return res.choices[0].message.content;
+  }
+  if (ollamaActive()) {
+    const res = await fetch(state.settings.ollama.baseUrl.replace(/\/$/, '') + '/api/chat', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: state.settings.ollama.model, stream: false, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }] })
+    });
+    if (!res.ok) throw new Error('Ollama-Server antwortet nicht (Status ' + res.status + ').');
+    const data = await res.json();
+    return data.message ? data.message.content : JSON.stringify(data);
+  }
+  throw new Error('Keine KI-Engine verfügbar.');
+}
+
+/* ---------- Whisper (transformers.js) & Voice notes ---------- */
+let transformersModulePromise = null;
+function getTransformersModule() {
+  if (!transformersModulePromise) transformersModulePromise = import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2');
+  return transformersModulePromise;
+}
+async function loadWhisperModel(modelId, onProgress) {
+  state.whisperLoading = true;
+  try {
+    const { pipeline } = await getTransformersModule();
+    const pipe = await pipeline('automatic-speech-recognition', modelId, {
+      progress_callback: (p) => { if (onProgress) onProgress(p); }
+    });
+    state.whisperPipeline = pipe;
+    state.whisperModelLoaded = modelId;
+    state.whisperLoading = false;
+    return true;
+  } catch (e) { state.whisperLoading = false; throw e; }
+}
+async function decodeAudioToMono16k(blob) {
+  const arrayBuf = await blob.arrayBuffer();
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const decoded = await audioCtx.decodeAudioData(arrayBuf);
+  const targetRate = 16000;
+  const offline = new OfflineAudioContext(1, Math.ceil(decoded.duration * targetRate), targetRate);
+  const src = offline.createBufferSource(); src.buffer = decoded; src.connect(offline.destination); src.start(0);
+  const rendered = await offline.startRendering();
+  return rendered.getChannelData(0);
+}
+let mediaRecorder = null, recordedChunks = [];
+async function toggleVoiceRecording() {
+  const btn = document.getElementById('voice-toolbar-btn');
+  if (state.isRecording) {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+    if (state.speechRecog) state.speechRecog.stop();
+    state.isRecording = false; if (btn) btn.classList.remove('active');
+    return;
+  }
+  if (state.whisperModelLoaded) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recordedChunks = [];
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = (e) => recordedChunks.push(e.data);
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        toast('Transkribiere Sprachnotiz…');
+        try {
+          const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+          const audioData = await decodeAudioToMono16k(blob);
+          const result = await state.whisperPipeline(audioData, { language: state.settings.whisper.language, task: 'transcribe' });
+          insertAtCursor((result.text || '').trim() + ' ', false);
+          toast('Sprachnotiz eingefügt', 'ok');
+        } catch (e) { toast('Transkription fehlgeschlagen: ' + e.message, 'err'); }
+      };
+      mediaRecorder.start(); state.isRecording = true; if (btn) btn.classList.add('active');
+      toast('Aufnahme läuft (Whisper) — Klick zum Stoppen');
+    } catch (e) { toast('Mikrofonzugriff verweigert: ' + e.message, 'err'); }
+  } else {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { toast('Spracherkennung wird von diesem Browser nicht unterstützt. Lade ein Whisper-Modell in den Einstellungen.', 'err'); return; }
+    const recog = new SR();
+    recog.lang = { de: 'de-DE', en: 'en-US', es: 'es-ES', it: 'it-IT', fr: 'fr-FR' }[state.settings.whisper.language] || 'de-DE';
+    recog.continuous = true; recog.interimResults = false;
+    recog.onresult = (e) => { for (let i = e.resultIndex; i < e.results.length; i++) if (e.results[i].isFinal) insertAtCursor(e.results[i][0].transcript + ' ', false); };
+    recog.onerror = () => { state.isRecording = false; if (btn) btn.classList.remove('active'); };
+    recog.onend = () => { state.isRecording = false; if (btn) btn.classList.remove('active'); };
+    recog.start(); state.speechRecog = recog; state.isRecording = true; if (btn) btn.classList.add('active');
+    toast('Aufnahme läuft (Web Speech API) — Klick zum Stoppen');
+  }
+}
+
+/* ---------- Sidebar resize / collapse ---------- */
+function applySidebarSizes() {
+  const left = document.getElementById('sidebar-left'), right = document.getElementById('sidebar-right');
+  left.style.width = state.settings.leftCollapsed ? '0px' : state.settings.leftWidth + 'px';
+  right.style.width = state.settings.rightCollapsed ? '0px' : state.settings.rightWidth + 'px';
+  left.classList.toggle('collapsed', state.settings.leftCollapsed);
+  right.classList.toggle('collapsed', state.settings.rightCollapsed);
+}
+function wireResizeHandle(handleId, side) {
+  const handle = document.getElementById(handleId);
+  let dragging = false, startX = 0, startW = 0;
+  handle.addEventListener('mousedown', (e) => {
+    dragging = true; startX = e.clientX; startW = side === 'left' ? state.settings.leftWidth : state.settings.rightWidth;
+    handle.classList.add('dragging'); document.body.style.userSelect = 'none'; e.preventDefault();
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const delta = side === 'left' ? (e.clientX - startX) : (startX - e.clientX);
+    let w = Math.max(180, Math.min(560, startW + delta));
+    if (side === 'left') { state.settings.leftWidth = w; document.getElementById('sidebar-left').style.width = w + 'px'; }
+    else { state.settings.rightWidth = w; document.getElementById('sidebar-right').style.width = w + 'px'; }
+  });
+  window.addEventListener('mouseup', () => { if (dragging) { dragging = false; handle.classList.remove('dragging'); document.body.style.userSelect = ''; saveSettings(); } });
+}
+function toggleSidebar(side) {
+  if (window.innerWidth <= 860) {
+    const el = document.getElementById('sidebar-' + side);
+    const wasOpen = el.classList.contains('mobile-open');
+    closeMobileSidebars();
+    if (!wasOpen) { el.classList.add('mobile-open'); document.getElementById('mobile-scrim').classList.add('show'); }
+    return;
+  }
+  if (side === 'left') state.settings.leftCollapsed = !state.settings.leftCollapsed;
+  else state.settings.rightCollapsed = !state.settings.rightCollapsed;
+  applySidebarSizes(); saveSettings();
+}
+function closeMobileSidebars() {
+  document.getElementById('sidebar-left').classList.remove('mobile-open');
+  document.getElementById('sidebar-right').classList.remove('mobile-open');
+  document.getElementById('mobile-scrim').classList.remove('show');
+}
+
+/* ---------- Bottom nav (mobile) ---------- */
+function renderBottomNav() {
+  const bar = document.getElementById('bottom-nav'); bar.innerHTML = '';
+  const items = state.settings.bottomNavItems.filter(i => i.visible).sort((a, b) => a.order - b.order);
+  items.forEach(item => {
+    const btn = document.createElement('button'); btn.className = 'bn-item'; btn.dataset.id = item.id;
+    btn.innerHTML = `<span data-lucide-btn="${item.icon}" style="width:20px;height:20px;"></span><span>${escapeHtml(item.label)}</span>`;
+    btn.addEventListener('click', () => handleBottomNavClick(item.id));
+    bar.appendChild(btn);
+  });
+  renderIcons(bar);
+}
+function handleBottomNavClick(id) {
+  document.querySelectorAll('.bn-item').forEach(b => b.classList.toggle('active', b.dataset.id === id));
+  if (id === 'settings') { openSettings('system'); return; }
+  if (id === 'editor') { closeMobileSidebars(); return; }
+  const panelSide = state.settings.panels.find(p => p.id === id || (id === 'ai-chat' && p.id === 'ai-chat'));
+  closeMobileSidebars();
+  if (panelSide) {
+    if (panelSide.sidebar === 'left') { state.activeLeftTab = panelSide.id; document.getElementById('sidebar-left').classList.add('mobile-open'); }
+    else { state.activeRightTab = panelSide.id; document.getElementById('sidebar-right').classList.add('mobile-open'); }
+    document.getElementById('mobile-scrim').classList.add('show');
+    renderSidebarTabs();
+  }
+}
+
+/* ---------- Settings Page ---------- */
+const SETTINGS_TABS = [
+  { id: 'system', label: 'System', icon: 'cpu' },
+  { id: 'ki', label: 'KI', icon: 'brain' },
+  { id: 'personas', label: 'Personas', icon: 'users' },
+  { id: 'addons', label: 'AddOns', icon: 'puzzle' },
+  { id: 'info', label: 'Info', icon: 'info' },
+];
+function openSettings(tab) {
+  state.activeSettingsTab = tab || state.activeSettingsTab || 'system';
+  document.getElementById('settings-page').classList.add('show');
+  renderSettingsTabs(); renderSettingsContent();
+}
+function closeSettings() { document.getElementById('settings-page').classList.remove('show'); renderDocToolbar(); renderSidebarTabs(); }
+function renderSettingsTabs() {
+  const wrap = document.getElementById('settings-tabs'); wrap.innerHTML = '';
+  SETTINGS_TABS.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'settings-tab-btn' + (t.id === state.activeSettingsTab ? ' active' : '');
+    btn.innerHTML = `<span data-lucide="${t.icon}"></span>${t.label}`;
+    btn.addEventListener('click', () => { state.activeSettingsTab = t.id; renderSettingsTabs(); renderSettingsContent(); wrap.classList.remove('mobile-open'); });
+    wrap.appendChild(btn);
+  });
+  if (window.lucide) lucide.createIcons();
+}
+function renderSettingsContent() {
+  const el = document.getElementById('settings-content'); el.innerHTML = '';
+  const build = { system: buildSettingsSystem, ki: buildSettingsKI, personas: buildSettingsPersonas, addons: buildSettingsAddons, info: buildSettingsInfo }[state.activeSettingsTab];
+  el.appendChild(build());
+  renderIcons(el);
+}
+
+/* --- Manage list helper (visible/order/sidebar-assign) --- */
+function buildManageList(title, desc, items, opts) {
+  const sec = document.createElement('div'); sec.className = 'settings-section';
+  sec.innerHTML = `<h3>${title}</h3><div class="desc">${desc}</div><div class="manage-list"></div>`;
+  const listEl = sec.querySelector('.manage-list');
+  function redraw() {
+    listEl.innerHTML = '';
+    const sorted = [...items].sort((a, b) => (opts.groupBy ? (a[opts.groupBy] === b[opts.groupBy] ? a.order - b.order : 0) : a.order - b.order));
+    sorted.forEach((item) => {
+      const row = document.createElement('div'); row.className = 'manage-list-row';
+      let sideSelectHtml = '';
+      if (opts.sidebarAssign) sideSelectHtml = `<select data-side>
+          <option value="left" ${item.sidebar === 'left' ? 'selected' : ''}>Links</option>
+          <option value="right" ${item.sidebar === 'right' ? 'selected' : ''}>Rechts</option>
+          <option value="hidden" ${item.sidebar === 'hidden' ? 'selected' : ''}>Ausgeblendet</option>
+        </select>`;
+      row.innerHTML = `<label class="switch" style="margin:0;"><input type="checkbox" ${item.visible ? 'checked' : ''}><span class="slider"></span></label>
+        <span class="name">${escapeHtml(item.label)}</span>${sideSelectHtml}
+        <div class="ord-btns"><button data-dir="up"><span data-lucide="chevron-up"></span></button><button data-dir="down"><span data-lucide="chevron-down"></span></button></div>`;
+      row.querySelector('input[type=checkbox]').addEventListener('change', (e) => { item.visible = e.target.checked; saveSettings(); opts.onChange && opts.onChange(); });
+      if (opts.sidebarAssign) row.querySelector('[data-side]').addEventListener('change', (e) => { item.sidebar = e.target.value; saveSettings(); opts.onChange && opts.onChange(); });
+      row.querySelectorAll('.ord-btns button').forEach(b => b.addEventListener('click', () => {
+        const dir = b.getAttribute('data-dir') === 'up' ? -1 : 1;
+        const group = opts.groupBy ? items.filter(i => i[opts.groupBy] === item[opts.groupBy]) : items;
+        const groupSorted = [...group].sort((a, b2) => a.order - b2.order);
+        const idx = groupSorted.indexOf(item); const swapIdx = idx + dir;
+        if (swapIdx < 0 || swapIdx >= groupSorted.length) return;
+        const tmp = item.order; item.order = groupSorted[swapIdx].order; groupSorted[swapIdx].order = tmp;
+        saveSettings(); redraw(); opts.onChange && opts.onChange();
+      }));
+      listEl.appendChild(row);
+    });
+    if (window.lucide) lucide.createIcons();
+  }
+  redraw();
+  return sec;
+}
+
+function buildSettingsSystem() {
+  const frag = document.createDocumentFragment();
+  const s1 = document.createElement('div'); s1.className = 'settings-section';
+  s1.innerHTML = `<h3>Oberfläche &amp; Vault</h3><div class="desc">Grundeinstellungen der Arbeitsumgebung.</div>
+    <div class="field"><label>Vault-Name</label><input type="text" id="set-vault-name" value="${escapeHtml((state.settings.vaultName || 'Mein Vault'))}"></div>
+    <div class="row-flex"><div><div style="font-weight:600;font-size:13px;">Linke Sidebar eingeklappt starten</div></div>
+      <label class="switch"><input type="checkbox" id="set-left-collapsed" ${state.settings.leftCollapsed ? 'checked' : ''}><span class="slider"></span></label></div>
+    <div class="row-flex"><div><div style="font-weight:600;font-size:13px;">Rechte Sidebar eingeklappt starten</div></div>
+      <label class="switch"><input type="checkbox" id="set-right-collapsed" ${state.settings.rightCollapsed ? 'checked' : ''}><span class="slider"></span></label></div>`;
+  frag.appendChild(s1);
+  frag.appendChild(buildManageList('Panels (Sidebars)', 'Lege fest, welche Panels in welcher Sidebar erscheinen, in welcher Reihenfolge, und ob sie sichtbar sind.', state.settings.panels, { sidebarAssign: true, groupBy: 'sidebar', onChange: () => { renderSidebarTabs(); } }));
+  frag.appendChild(buildManageList('Werkzeugleiste (Editor-Toolbar)', 'Ein-/ausblenden und Reihenfolge der Toolbar-Icons über dem Editor.', state.settings.toolbarItems, { onChange: renderDocToolbar }));
+  frag.appendChild(buildManageList('Mobile Bottom-Navigation', 'Icons und Reihenfolge der fixierten unteren Navigationsleiste (mobil).', state.settings.bottomNavItems, { onChange: renderBottomNav }));
+  const s2 = document.createElement('div'); s2.className = 'settings-section';
+  s2.innerHTML = `<h3>Vorlagen</h3><div class="desc">Wiederverwendbare Textbausteine fürs schnelle Einfügen.</div><div id="tpl-manage-list"></div>
+    <button class="btn" id="tpl-add-new"><span data-lucide-btn="plus" style="width:13px;height:13px;"></span> Neue Vorlage</button>`;
+  frag.appendChild(s2);
+  setTimeout(() => {
+    document.getElementById('set-vault-name').addEventListener('input', (e) => { state.settings.vaultName = e.target.value; document.getElementById('vault-label').textContent = e.target.value || 'Mein Vault'; saveSettings(); });
+    document.getElementById('set-left-collapsed').addEventListener('change', (e) => { state.settings.leftCollapsed = e.target.checked; applySidebarSizes(); saveSettings(); });
+    document.getElementById('set-right-collapsed').addEventListener('change', (e) => { state.settings.rightCollapsed = e.target.checked; applySidebarSizes(); saveSettings(); });
+    renderTplManageList();
+    document.getElementById('tpl-add-new').addEventListener('click', async () => {
+      state.templates.push({ id: uid(), name: 'Neue Vorlage', content: '' }); await saveTemplates(); renderTplManageList();
+    });
+  }, 0);
+  return frag;
+}
+function renderTplManageList() {
+  const el = document.getElementById('tpl-manage-list'); if (!el) return;
+  el.innerHTML = '';
+  state.templates.forEach(t => {
+    const row = document.createElement('div'); row.className = 'manage-list-row'; row.style.flexWrap = 'wrap';
+    row.innerHTML = `<input type="text" value="${escapeHtml(t.name)}" style="flex:1;min-width:120px;" data-f="name">
+      <button class="icon-btn" data-lucide-btn="trash-2"></button>
+      <textarea rows="2" style="width:100%;margin-top:6px;" data-f="content" placeholder="Vorlagen-Inhalt (Markdown)…">${escapeHtml(t.content)}</textarea>`;
+    row.querySelector('[data-f=name]').addEventListener('input', (e) => { t.name = e.target.value; saveTemplates(); });
+    row.querySelector('[data-f=content]').addEventListener('input', (e) => { t.content = e.target.value; saveTemplates(); });
+    row.querySelector('button').addEventListener('click', () => { state.templates = state.templates.filter(x => x.id !== t.id); saveTemplates(); renderTplManageList(); });
+    el.appendChild(row);
+  });
+  renderIcons(el);
+}
+
+/* --- KI Settings Tab --- */
+const WEBLLM_MODELS = [
+  { id: 'Llama-3.2-1B-Instruct-q4f16_1-MLC', label: 'Llama 3.2 1B Instruct (klein, schnell)' },
+  { id: 'Llama-3.2-3B-Instruct-q4f16_1-MLC', label: 'Llama 3.2 3B Instruct (ausgewogen)' },
+  { id: 'Phi-3.5-mini-instruct-q4f16_1-MLC', label: 'Phi-3.5 Mini Instruct' },
+  { id: 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC', label: 'Qwen2.5 1.5B Instruct (mehrsprachig)' },
+];
+const WHISPER_MODELS = [
+  { id: 'Xenova/whisper-tiny', label: 'Whisper Tiny (mehrsprachig, ~75 MB, schnell)' },
+  { id: 'Xenova/whisper-base', label: 'Whisper Base (mehrsprachig, ~145 MB, genauer)' },
+];
+const WHISPER_LANGS = [
+  { code: 'de', label: 'Deutsch' }, { code: 'en', label: 'English' }, { code: 'es', label: 'Español' },
+  { code: 'it', label: 'Italiano' }, { code: 'fr', label: 'Français' },
+];
+function buildSettingsKI() {
+  const frag = document.createDocumentFragment();
+  const s1 = document.createElement('div'); s1.className = 'settings-section';
+  s1.innerHTML = `<h3>Hardware-Check</h3><div class="desc">WebLLM benötigt WebGPU im Browser für clientseitige KI-Inferenz.</div>
+    <div class="row-flex"><div style="font-weight:600;">Status</div><span class="gpu-pill ${state.webgpuAvailable ? 'ok' : 'bad'}"><span class="dot"></span>${state.webgpuAvailable ? 'WebGPU verfügbar' : 'WebGPU nicht verfügbar'}</span></div>
+    <button class="btn" id="ki-recheck"><span data-lucide-btn="refresh-cw" style="width:13px;height:13px;"></span> Erneut prüfen</button>`;
+  frag.appendChild(s1);
+
+  const s2 = document.createElement('div'); s2.className = 'settings-section';
+  s2.innerHTML = `<h3>WebLLM Standard-Engine</h3><div class="desc">Modell wird vollständig lokal im Browser über WebGPU ausgeführt. Erster Download kann je nach Modellgröße einige Minuten dauern (wird lokal gecached).</div>
+    <div class="field"><label>Modell</label><select id="ki-model-select">${WEBLLM_MODELS.map(m => `<option value="${m.id}" ${state.settings.webllmModel === m.id ? 'selected' : ''}>${m.label}</option>`).join('')}</select></div>
+    <button class="btn btn-primary" id="ki-load-model" ${!state.webgpuAvailable ? 'disabled' : ''}><span data-lucide-btn="download" style="width:13px;height:13px;"></span> Modell laden</button>
+    <span id="ki-model-status" class="hint" style="margin-left:10px;">${state.webllmModelLoaded ? 'Geladen: ' + state.webllmModelLoaded : 'Noch kein Modell geladen.'}</span>
+    <div class="progress-bar" id="ki-progress" style="display:none;"><div class="fill" id="ki-progress-fill"></div></div>`;
+  frag.appendChild(s2);
+
+  const s3 = document.createElement('div'); s3.className = 'settings-section';
+  s3.innerHTML = `<h3>Sprachnotizen — Whisper-Modell</h3><div class="desc">Für lokale, clientseitige Transkription (transformers.js). Die mehrsprachigen Whisper-Modelle decken Deutsch, Englisch, Spanisch, Italienisch und Französisch mit einem einzigen Modell-Download ab — wähle unten die Ausgabesprache für die Transkription. Ohne geladenes Whisper-Modell wird automatisch auf die Web Speech API des Browsers zurückgegriffen.</div>
+    <div class="field"><label>Whisper-Modell</label><select id="wh-model-select">${WHISPER_MODELS.map(m => `<option value="${m.id}" ${state.settings.whisper.model === m.id ? 'selected' : ''}>${m.label}</option>`).join('')}</select></div>
+    <div class="field"><label>Sprache</label><select id="wh-lang-select">${WHISPER_LANGS.map(l => `<option value="${l.code}" ${state.settings.whisper.language === l.code ? 'selected' : ''}>${l.label}</option>`).join('')}</select></div>
+    <button class="btn btn-primary" id="wh-load-model"><span data-lucide-btn="download" style="width:13px;height:13px;"></span> Whisper-Modell laden</button>
+    <span id="wh-model-status" class="hint" style="margin-left:10px;">${state.whisperModelLoaded ? 'Geladen: ' + state.whisperModelLoaded : 'Noch kein Modell geladen (Fallback: Web Speech API).'}</span>
+    <div class="progress-bar" id="wh-progress" style="display:none;"><div class="fill" id="wh-progress-fill"></div></div>`;
+  frag.appendChild(s3);
+
+  setTimeout(() => {
+    document.getElementById('ki-recheck').addEventListener('click', async () => { await checkHardware(); renderSettingsContent(); });
+    document.getElementById('ki-model-select').addEventListener('change', (e) => { state.settings.webllmModel = e.target.value; saveSettings(); });
+    document.getElementById('ki-load-model').addEventListener('click', async () => {
+      const btn = document.getElementById('ki-load-model'); btn.disabled = true;
+      const progWrap = document.getElementById('ki-progress'), fill = document.getElementById('ki-progress-fill'), status = document.getElementById('ki-model-status');
+      progWrap.style.display = 'block';
+      try {
+        await loadWebLLMModel(state.settings.webllmModel, (report) => {
+          const pct = Math.round((report.progress || 0) * 100);
+          fill.style.width = pct + '%'; status.textContent = (report.text || 'Lädt…') + ' (' + pct + '%)';
+        });
+        status.textContent = 'Geladen: ' + state.webllmModelLoaded;
+        toast('WebLLM-Modell geladen', 'ok'); renderDocToolbar(); renderChatMsgs();
+      } catch (e) { status.textContent = 'Fehler: ' + e.message; toast('WebLLM konnte nicht geladen werden: ' + e.message, 'err'); }
+      btn.disabled = false;
+    });
+    document.getElementById('wh-model-select').addEventListener('change', (e) => { state.settings.whisper.model = e.target.value; saveSettings(); });
+    document.getElementById('wh-lang-select').addEventListener('change', (e) => { state.settings.whisper.language = e.target.value; saveSettings(); });
+    document.getElementById('wh-load-model').addEventListener('click', async () => {
+      const btn = document.getElementById('wh-load-model'); btn.disabled = true;
+      const progWrap = document.getElementById('wh-progress'), fill = document.getElementById('wh-progress-fill'), status = document.getElementById('wh-model-status');
+      progWrap.style.display = 'block';
+      try {
+        await loadWhisperModel(state.settings.whisper.model, (p) => {
+          if (p.status === 'progress') { const pct = Math.round(p.progress || 0); fill.style.width = pct + '%'; status.textContent = (p.file || 'Lädt…') + ' (' + pct + '%)'; }
+          else status.textContent = p.status || 'Lädt…';
+        });
+        status.textContent = 'Geladen: ' + state.whisperModelLoaded;
+        toast('Whisper-Modell geladen', 'ok');
+      } catch (e) { status.textContent = 'Fehler: ' + e.message; toast('Whisper konnte nicht geladen werden: ' + e.message, 'err'); }
+      btn.disabled = false;
+    });
+  }, 0);
+  return frag;
+}
+
+/* --- Personas Tab --- */
+function buildSettingsPersonas() {
+  const frag = document.createDocumentFragment();
+  const s = document.createElement('div'); s.className = 'settings-section';
+  s.innerHTML = `<h3>KI-Personas</h3><div class="desc">Verwalte System-Prompts für verschiedene Copilot-Persönlichkeiten. Die aktive Persona wird im KI-Chat und bei Copilot-Aktionen verwendet.</div>
+    <div id="persona-list"></div>
+    <button class="btn btn-primary" id="persona-add"><span data-lucide-btn="plus" style="width:13px;height:13px;"></span> Neue Persona</button>`;
+  frag.appendChild(s);
+  setTimeout(() => {
+    renderPersonaList();
+    document.getElementById('persona-add').addEventListener('click', async () => {
+      state.personas.push({ id: uid(), name: 'Neue Persona', systemPrompt: 'Du bist ein hilfreicher Assistent.' });
+      await savePersonas(); renderPersonaList();
+    });
+  }, 0);
+  return frag;
+}
+function renderPersonaList() {
+  const el = document.getElementById('persona-list'); if (!el) return;
+  el.innerHTML = '';
+  if (!state.settings.activePersonaId && state.personas[0]) state.settings.activePersonaId = state.personas[0].id;
+  state.personas.forEach(p => {
+    const card = document.createElement('div'); card.className = 'persona-card' + (p.id === state.settings.activePersonaId ? ' active-persona' : '');
+    card.innerHTML = `<div class="ph"><input type="text" value="${escapeHtml(p.name)}" data-f="name" style="font-weight:700;font-size:13.5px;border:none;background:transparent;padding:0;width:auto;flex:1;">
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button class="btn" data-act="activate" style="font-size:11px;padding:5px 9px;">${p.id === state.settings.activePersonaId ? '✓ Aktiv' : 'Aktivieren'}</button>
+          <button class="icon-btn" data-act="del" data-lucide-btn="trash-2"></button>
+        </div></div>
+      <textarea rows="3" data-f="systemPrompt" placeholder="System-Prompt…">${escapeHtml(p.systemPrompt)}</textarea>`;
+    card.querySelector('[data-f=name]').addEventListener('input', (e) => { p.name = e.target.value; savePersonas(); });
+    card.querySelector('[data-f=systemPrompt]').addEventListener('input', (e) => { p.systemPrompt = e.target.value; savePersonas(); });
+    card.querySelector('[data-act=activate]').addEventListener('click', () => { state.settings.activePersonaId = p.id; saveSettings(); renderPersonaList(); });
+    card.querySelector('[data-act=del]').addEventListener('click', () => { if (state.personas.length <= 1) { toast('Mindestens eine Persona erforderlich', 'err'); return; } state.personas = state.personas.filter(x => x.id !== p.id); savePersonas(); renderPersonaList(); });
+    el.appendChild(card);
+  });
+  renderIcons(el);
+}
+
+/* --- AddOns Tab --- */
+function buildSettingsAddons() {
+  const frag = document.createDocumentFragment();
+  const s1 = document.createElement('div'); s1.className = 'settings-section';
+  s1.innerHTML = `<h3>Ollama KI-Engine <span class="badge-pro" style="background:var(--grad);">ADDON</span></h3>
+    <div class="desc">Kostenpflichtiges AddOn für die Free-Version: nutzt einen lokal laufenden Ollama-Server statt WebLLM als KI-Engine — ideal bei fehlender WebGPU-Unterstützung.</div>
+    <div class="card-row"><div class="icn" data-lucide-btn="cpu"></div><div class="info"><div class="t">Ollama-Server verbinden</div><div class="d">${state.settings.addons.ollama.unlocked ? 'Freigeschaltet' : 'Nicht freigeschaltet — Demo-Freischaltung unten verfügbar'}</div></div>
+      ${state.settings.addons.ollama.unlocked ? '' : '<button class="btn btn-primary" id="addon-unlock-ollama">Freischalten (Demo)</button>'}</div>
+    <div id="ollama-config" style="${state.settings.addons.ollama.unlocked ? '' : 'opacity:.4;pointer-events:none;'}">
+      <div class="row-flex"><div style="font-weight:600;font-size:13px;">Ollama-Engine aktivieren</div><label class="switch"><input type="checkbox" id="ollama-enable" ${state.settings.ollama.enabled ? 'checked' : ''}><span class="slider"></span></label></div>
+      <div class="field"><label>Server-URL</label><input type="text" id="ollama-url" value="${escapeHtml(state.settings.ollama.baseUrl)}"></div>
+      <div class="field"><label>Modellname</label><input type="text" id="ollama-model" value="${escapeHtml(state.settings.ollama.model)}"></div>
+      <button class="btn" id="ollama-test"><span data-lucide-btn="refresh-cw" style="width:13px;height:13px;"></span> Verbindung testen</button>
+    </div>`;
+  frag.appendChild(s1);
+
+  [
+    { key: 'websearch', title: 'Web-Suche', desc: 'DuckDuckGo-Suche inklusive KI-Zusammenfassung direkt im Chat.', icon: 'search' },
+    { key: 'llmprovider', title: 'LLM Provider', desc: 'Anbindung externer kommerzieller LLM-Provider (OpenAI, Gemini, OpenRouter).', icon: 'network' },
+    { key: 'pluginmanager', title: 'Plugin-Verwaltung', desc: 'Community-Plugins installieren, aktivieren oder deaktivieren.', icon: 'puzzle' },
+  ].forEach(a => {
+    const s = document.createElement('div'); s.className = 'settings-section';
+    s.innerHTML = `<h3>${a.title} <span class="badge-pro">PRO</span></h3><div class="desc">${a.desc} Diese Funktion ist Teil der Pro-Version (alle AddOns inklusive) und in der Free-Version nicht verfügbar.</div>
+      <div class="card-row" style="opacity:.6;"><div class="icn" data-lucide-btn="${a.icon}"></div><div class="info"><div class="t">Nur in Pro-Version</div><div class="d">Upgrade auf Pro, um dieses Feature freizuschalten.</div></div><button class="btn" disabled>Gesperrt</button></div>`;
+    frag.appendChild(s);
+  });
+
+  setTimeout(() => {
+    const unlockBtn = document.getElementById('addon-unlock-ollama');
+    if (unlockBtn) unlockBtn.addEventListener('click', () => { state.settings.addons.ollama.unlocked = true; saveSettings(); toast('Ollama-AddOn freigeschaltet (Demo)', 'ok'); renderSettingsContent(); });
+    const enableChk = document.getElementById('ollama-enable');
+    if (enableChk) enableChk.addEventListener('change', (e) => { state.settings.ollama.enabled = e.target.checked; saveSettings(); checkHardware(); renderDocToolbar(); renderChatMsgs(); });
+    const urlInp = document.getElementById('ollama-url'); if (urlInp) urlInp.addEventListener('input', (e) => { state.settings.ollama.baseUrl = e.target.value; saveSettings(); });
+    const modelInp = document.getElementById('ollama-model'); if (modelInp) modelInp.addEventListener('input', (e) => { state.settings.ollama.model = e.target.value; saveSettings(); });
+    const testBtn = document.getElementById('ollama-test');
+    if (testBtn) testBtn.addEventListener('click', async () => {
+      try { const res = await fetch(state.settings.ollama.baseUrl.replace(/\/$/, '') + '/api/tags'); if (!res.ok) throw new Error('Status ' + res.status); toast('Ollama-Server erreichbar', 'ok'); }
+      catch (e) { toast('Ollama nicht erreichbar: ' + e.message, 'err'); }
+    });
+  }, 0);
+  return frag;
+}
+
+/* --- Info Tab --- */
+function buildSettingsInfo() {
+  const frag = document.createDocumentFragment();
+  const s1 = document.createElement('div'); s1.className = 'settings-section';
+  s1.innerHTML = `<h3>App-Informationen</h3><div class="desc">Markdown Editor — Free Version. Single-File, local-first, OKF-kompatibel.</div>
+    <div class="info-stat"><span class="k">Version</span><span class="v">1.0.0-free</span></div>
+    <div class="info-stat"><span class="k">Edition</span><span class="v">Free (Single User)</span></div>
+    <div class="info-stat"><span class="k">Speicherung</span><span class="v">${window.indexedDB ? 'IndexedDB' : 'localStorage (Fallback)'}</span></div>`;
+  frag.appendChild(s1);
+  const s2 = document.createElement('div'); s2.className = 'settings-section';
+  s2.innerHTML = `<h3>System-Informationen</h3>
+    <div class="info-stat"><span class="k">Browser</span><span class="v" style="max-width:280px;text-align:right;overflow-wrap:anywhere;">${escapeHtml(navigator.userAgent.split(') ').pop().split(' ')[0] || navigator.platform)}</span></div>
+    <div class="info-stat"><span class="k">Plattform</span><span class="v">${escapeHtml(navigator.platform || '–')}</span></div>
+    <div class="info-stat"><span class="k">WebGPU</span><span class="v">${state.webgpuAvailable ? 'Verfügbar ✓' : 'Nicht verfügbar ✕'}</span></div>
+    <div class="info-stat"><span class="k">CPU-Kerne (logisch)</span><span class="v">${navigator.hardwareConcurrency || '–'}</span></div>
+    <div class="info-stat"><span class="k">Bildschirm</span><span class="v">${screen.width}×${screen.height}</span></div>
+    <div class="info-stat"><span class="k">Online-Status</span><span class="v">${navigator.onLine ? 'Online' : 'Offline'}</span></div>
+    <div class="info-stat"><span class="k">WebLLM-Modell</span><span class="v">${state.webllmModelLoaded || 'nicht geladen'}</span></div>
+    <div class="info-stat"><span class="k">Whisper-Modell</span><span class="v">${state.whisperModelLoaded || 'nicht geladen'}</span></div>
+    <div class="info-stat"><span class="k">Notizen im Vault</span><span class="v">${state.files.length}</span></div>
+    <div class="info-stat"><span class="k">Ordner im Vault</span><span class="v">${state.folders.length}</span></div>`;
+  frag.appendChild(s2);
+  const s3 = document.createElement('div'); s3.className = 'settings-section';
+  s3.innerHTML = `<h3>Über OKF</h3><div class="desc">Das Open Knowledge Framework (OKF) strukturiert atomare Wissensbausteine mit Definition, Referenzen, Kategorisierung und Vertrauensniveau, um vernetztes, überprüfbares Wissen aufzubauen.</div>`;
+  frag.appendChild(s3);
+  return frag;
+}
+
+/* ---------- App init ---------- */
+async function initApp() {
+  renderIcons(document);
+  await DB.open();
+  await loadVault();
+  document.getElementById('vault-label').textContent = state.settings.vaultName || 'Mein Vault';
+  applySidebarSizes();
+  wireResizeHandle('resize-left', 'left');
+  wireResizeHandle('resize-right', 'right');
+  document.getElementById('btn-toggle-left').addEventListener('click', () => toggleSidebar('left'));
+  document.getElementById('btn-toggle-right').addEventListener('click', () => toggleSidebar('right'));
+  document.getElementById('btn-open-settings').addEventListener('click', () => openSettings('system'));
+  document.getElementById('settings-close').addEventListener('click', closeSettings);
+  document.getElementById('hw-banner-close').addEventListener('click', () => document.getElementById('hw-banner').classList.remove('show'));
+  document.getElementById('hw-banner-settings').addEventListener('click', () => openSettings('addons'));
+  document.getElementById('gpu-pill').addEventListener('click', () => openSettings('ki'));
+  document.getElementById('mobile-scrim').addEventListener('click', closeMobileSidebars);
+  const settingsMobileToggle = document.getElementById('settings-mobile-toggle');
+  settingsMobileToggle.addEventListener('click', () => document.getElementById('settings-tabs').classList.toggle('mobile-open'));
+  function syncSettingsMobileToggle() { settingsMobileToggle.style.display = window.innerWidth <= 860 ? 'inline-flex' : 'none'; }
+  syncSettingsMobileToggle(); window.addEventListener('resize', syncSettingsMobileToggle);
+  window.addEventListener('resize', () => { if (graphCanvas) initGraph(); });
+
+  wireEditorInput();
+  renderDocToolbar();
+  renderBottomNav();
+  renderSidebarTabs();
+  openFile(state.activeFileId);
+  updateSaveDot();
+
+  await checkHardware();
+}
+document.addEventListener('DOMContentLoaded', initApp);
+</script>
+
+</body>
+</html>
